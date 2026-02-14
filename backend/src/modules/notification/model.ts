@@ -161,7 +161,7 @@ NotificationSchema.index({ relatedModel: 1, relatedId: 1 }, { sparse: true });
 /**
  * Pre-save hook to set readAt timestamp
  */
-NotificationSchema.pre<INotification>('save', function (next) {
+NotificationSchema.pre('save', function (next) {
   if (this.isModified('isRead') && this.isRead && !this.readAt) {
     this.readAt = new Date();
   }
@@ -171,7 +171,7 @@ NotificationSchema.pre<INotification>('save', function (next) {
 /**
  * Pre-save hook to set emailSentAt timestamp
  */
-NotificationSchema.pre<INotification>('save', function (next) {
+NotificationSchema.pre('save', function (next) {
   if (this.isModified('emailSent') && this.emailSent && !this.emailSentAt) {
     this.emailSentAt = new Date();
   }

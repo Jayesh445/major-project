@@ -178,7 +178,7 @@ InventorySchema.index({ warehouse: 1, currentStock: 1, reorderPoint: 1 });
  * Pre-save hook to auto-compute availableStock
  * availableStock = currentStock - reservedStock
  */
-InventorySchema.pre<IInventory>('save', function (next) {
+InventorySchema.pre('save', function (next) {
   // Auto-compute available stock
   this.availableStock = this.currentStock - this.reservedStock;
 
@@ -193,10 +193,10 @@ InventorySchema.pre<IInventory>('save', function (next) {
 /**
  * Pre-update hook to auto-compute availableStock on updates
  */
-InventorySchema.pre<IInventory>('findOneAndUpdate', function (next) {
-  const update = this.getUpdate() as any;
+InventorySchema.pre('findOneAndUpdate', function (next) {
+  const update: any = this.getUpdate();
 
-  if (update.$set) {
+  if (update?.$set) {
     const currentStock = update.$set.currentStock;
     const reservedStock = update.$set.reservedStock;
 
