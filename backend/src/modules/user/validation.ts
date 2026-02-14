@@ -133,3 +133,21 @@ export const getUsersQuerySchema = z.object({
       .transform((val) => parseInt(val, 10)),
   }),
 });
+
+/**
+ * Validation schema for refresh token
+ */
+export const refreshTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(1, 'Refresh token is required'),
+  }),
+});
+
+/**
+ * Validation schema for logout
+ */
+export const logoutSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(1, 'Refresh token is required'),
+  }),
+});

@@ -10,6 +10,8 @@ import {
   updateUserSchema,
   getUserSchema,
   getUsersQuerySchema,
+  refreshTokenSchema,
+  logoutSchema,
 } from './validation';
 
 const router = Router();
@@ -23,6 +25,9 @@ router.post('/signup', validateRequest(signupSchema), UserController.signup);
 
 // POST /api/users/login - User login
 router.post('/login', validateRequest(loginSchema), UserController.login);
+
+// POST /api/users/refresh-token - Refresh access token
+router.post('/refresh-token', validateRequest(refreshTokenSchema), UserController.refreshToken);
 
 /**
  * Protected routes (authentication required)
@@ -46,6 +51,20 @@ router.post(
   validateRequest(changePasswordSchema),
   UserController.changePassword
 );
+
+// POST /api/users/logout - Logout (revoke refresh token)
+router.post(
+  '/logout',
+  authenticate,
+  validateRequest(logoutSchema),
+  UserController.logout
+);
+
+// POST /api/users/logout-all - Logout from all devices
+router.post('/logout-all', authenticate, UserController.logoutAll);
+
+// GET /api/users/sessions - Get active sessions
+router.get('/sessions', authenticate, UserController.getSessions);
 
 /**
  * Admin-only routes

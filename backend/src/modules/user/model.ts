@@ -17,6 +17,17 @@ export interface INotificationPreferences {
 }
 
 /**
+ * Refresh token interface
+ */
+export interface IRefreshToken {
+  token: string;
+  expiresAt: Date;
+  createdAt: Date;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+/**
  * User document interface
  */
 export interface IUser extends Document {
@@ -29,6 +40,7 @@ export interface IUser extends Document {
   isActive: boolean;
   lastLogin?: Date;
   notificationPreferences: INotificationPreferences;
+  refreshTokens: IRefreshToken[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -57,6 +69,33 @@ const NotificationPreferencesSchema = new Schema<INotificationPreferences>(
     negotiationUpdates: {
       type: Boolean,
       default: true,
+    },
+  },
+  { _id: false }
+);
+
+/**
+ * Refresh token subdocument schema
+ */
+const RefreshTokenSchema = new Schema<IRefreshToken>(
+  {
+    token: {
+      type: String,
+      required: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    ipAddress: {
+      type: String,
+    },
+    userAgent: {
+      type: String,
     },
   },
   { _id: false }
@@ -121,6 +160,11 @@ const UserSchema = new Schema<IUser>(
     notificationPreferences: {
       type: NotificationPreferencesSchema,
       default: () => ({}),
+    },
+    refreshTokens: {
+      type: [RefreshTokenSchema],
+      default: [],
+      select: false, // Don't include refresh tokens in queries by default
     },
   },
   {

@@ -25,13 +25,22 @@ export class UserController {
    * POST /api/users/signup
    */
   signup = asyncHandler(async (req: Request, res: Response) => {
-    const { user, token } = await UserService.signup(req.body);
+    const metadata = {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    };
+
+    const { user, accessToken, refreshToken } = await UserService.signup(req.body, metadata);
 
     // Remove password hash from response
     const userResponse = user.toObject();
     delete (userResponse as any).passwordHash;
 
-    return sendCreated(res, { user: userResponse, token }, 'User registered successfully');
+    return sendCreated(
+      res,
+      { user: userResponse, accessToken, refreshToken },
+      'User registered successfully'
+    );
   });
 
   /**
@@ -39,13 +48,22 @@ export class UserController {
    * POST /api/users/login
    */
   login = asyncHandler(async (req: Request, res: Response) => {
-    const { user, token } = await UserService.login(req.body);
+    const metadata = {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    };
+
+    const { user, accessToken, refreshToken } = await UserService.login(req.body, metadata);
 
     // Remove password hash from response
     const userResponse = user.toObject();
     delete (userResponse as any).passwordHash;
 
-    return sendSuccess(res, { user: userResponse, token }, 'Login successful');
+    return sendSuccess(
+      res,
+      { user: userResponse, accessToken, refreshToken },
+      'Login successful'
+    );
   });
 
   /**
@@ -150,6 +168,66 @@ export class UserController {
     await UserService.deleteUser(userId);
 
     return sendSuccess(res, null, 'User deleted successfully');
+  });
+
+  /**
+   * Refresh access token
+   * POST /api/users/refresh-token
+   */
+  refreshToken = asyncHandler(async (req: Request, res: Response) => {
+    const { refreshToken } = req.body;
+
+    const metadata = {
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    };
+
+    const tokens = await UserService.refreshAccessToken(refreshToken, metadata);
+
+    return sendSuccess(res, tokens, 'Token refreshed successfully');
+  });
+
+  /**
+   * Logout (revoke refresh token)
+   * POST /api/users/logout
+   */
+  logout = asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+      throw new ApiError(HttpStatus.UNAUTHORIZED, 'User not authenticated');
+    }
+
+    const { refreshToken } = req.body;
+    await UserService.logout(req.user.userId, refreshToken);
+
+    return sendSuccess(res, null, 'Logged out successfully');
+  });
+
+  /**
+   * Logout from all devices
+   * POST /api/users/logout-all
+   */
+  logoutAll = asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+      throw new ApiError(HttpStatus.UNAUTHORIZED, 'User not authenticated');
+    }
+
+    await UserService.logoutAll(req.user.userId);
+
+    return sendSuccess(res, null, 'Logged out from all devices successfully');
+  });
+
+  /**
+   * Get active sessions
+   * GET /api/users/sessions
+   */
+  getSessions = asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (!req.user) {
+      throw new ApiError(HttpStatus.UNAUTHORIZED, 'User not authenticated');
+    }
+
+    const sessions = await UserService.getActiveSessions(req.user.userId);
+
+    return sendSuccess(res, { sessions }, 'Sessions retrieved successfully');
   });
 }
 
