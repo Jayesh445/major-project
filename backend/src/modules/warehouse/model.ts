@@ -29,6 +29,7 @@ export interface ILocation {
  * Warehouse zone subdocument
  */
 export interface IZone {
+  _id?: mongoose.Types.ObjectId;
   zoneCode: string;
   type: ZoneType;
   capacityUnits: number;
@@ -44,7 +45,7 @@ export interface IWarehouse extends Document {
   location: ILocation;
   totalCapacity: number;
   usedCapacity: number;
-  zones: IZone[];
+  zones: mongoose.Types.DocumentArray<IZone>;
   manager?: mongoose.Types.ObjectId;
   isActive: boolean;
   createdAt: Date;

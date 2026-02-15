@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ProductService } from './service';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { asyncHandler } from '@/utils/asyncHandler';
+import type { AuthRequest } from '@/middlewares';
 import {
   CreateProductSchema,
   UpdateProductSchema,
@@ -25,7 +26,7 @@ export class ProductController {
    */
   create = asyncHandler(async (req: Request, res: Response) => {
     const dto = CreateProductSchema.parse(req.body);
-    const userId = (req as any).user.id;
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const product = await this.service.create(dto, userId);
 
@@ -40,7 +41,15 @@ export class ProductController {
    * @access All authenticated users
    */
   findAll = asyncHandler(async (req: Request, res: Response) => {
-    const query = QueryProductsSchema.parse(req.query);
+    const queryInput = { ...req.query };
+    if (
+      queryInput.isActive == null ||
+      queryInput.isActive === '' ||
+      (Array.isArray(queryInput.isActive) && queryInput.isActive.length === 0)
+    ) {
+      queryInput.isActive = 'true';
+    }
+    const query = QueryProductsSchema.parse(queryInput);
 
     const result = await this.service.findAll(query);
 
@@ -85,7 +94,7 @@ export class ProductController {
    * @access All authenticated users
    */
   findBySku = asyncHandler(async (req: Request, res: Response) => {
-    const { sku } = req.params;
+    const sku = Array.isArray(req.params.sku) ? req.params.sku[0] : req.params.sku;
 
     const product = await this.service.findBySku(sku);
 
@@ -139,7 +148,7 @@ export class ProductController {
    */
   bulkUpload = asyncHandler(async (req: Request, res: Response) => {
     const products = BulkUploadProductSchema.parse(req.body);
-    const userId = (req as any).user.id;
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const result = await this.service.bulkUpload(products, userId);
 
@@ -158,7 +167,9 @@ export class ProductController {
    * @access All authenticated users
    */
   findByCategory = asyncHandler(async (req: Request, res: Response) => {
-    const { category } = req.params;
+    const category = Array.isArray(req.params.category)
+      ? req.params.category[0]
+      : req.params.category;
     const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
 
     const products = await this.service.findByCategory(category, limit);

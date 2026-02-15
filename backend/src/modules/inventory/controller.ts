@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { InventoryService } from './service';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { asyncHandler } from '@/utils/asyncHandler';
+import type { AuthRequest } from '@/middlewares';
 import {
   InitializeInventorySchema,
   AdjustStockSchema,
@@ -29,7 +30,7 @@ export class InventoryController {
    */
   initialize = asyncHandler(async (req: Request, res: Response) => {
     const dto = InitializeInventorySchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const inventory = await this.service.initialize(dto, userId);
 
@@ -76,7 +77,7 @@ export class InventoryController {
   adjustStock = asyncHandler(async (req: Request, res: Response) => {
     const { id } = InventoryIdSchema.parse(req.params);
     const dto = AdjustStockSchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const inventory = await this.service.adjustStock(id, dto, userId);
 
@@ -93,7 +94,7 @@ export class InventoryController {
   reserveStock = asyncHandler(async (req: Request, res: Response) => {
     const { id } = InventoryIdSchema.parse(req.params);
     const dto = ReserveStockSchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const inventory = await this.service.reserveStock(id, dto, userId);
 
@@ -110,7 +111,7 @@ export class InventoryController {
   releaseReservation = asyncHandler(async (req: Request, res: Response) => {
     const { id } = InventoryIdSchema.parse(req.params);
     const dto = ReleaseReservationSchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const inventory = await this.service.releaseReservation(id, dto, userId);
 
@@ -126,7 +127,7 @@ export class InventoryController {
    */
   transferStock = asyncHandler(async (req: Request, res: Response) => {
     const dto = TransferStockSchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const result = await this.service.transferStock(dto, userId);
 
@@ -174,7 +175,7 @@ export class InventoryController {
   triggerReplenishment = asyncHandler(async (req: Request, res: Response) => {
     const { id } = InventoryIdSchema.parse(req.params);
     const dto = TriggerReplenishmentSchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const inventory = await this.service.triggerReplenishment(id, dto, userId);
 

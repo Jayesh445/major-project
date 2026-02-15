@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { PurchaseOrderController } from './controller';
-
-// Import authentication and authorization middleware from user module
-// import { authenticate, authorize } from '@/modules/user/middleware';
+import { authenticate, authorize } from '@/middlewares';
 
 /**
  * Purchase Order routes
@@ -20,23 +18,23 @@ const controller = new PurchaseOrderController();
 // Get pending approvals
 router.get(
   '/pending',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.getPendingApprovals
 );
 
 // Get analytics
 router.get(
   '/analytics',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.getAnalytics
 );
 
 // Get by PO number
 router.get(
   '/po/:poNumber',
-  // authenticate,
+  authenticate,
   controller.findByPONumber
 );
 
@@ -47,38 +45,38 @@ router.get(
 // Create purchase order
 router.post(
   '/',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.create
 );
 
 // Get all purchase orders
 router.get(
   '/',
-  // authenticate,
+  authenticate,
   controller.findAll
 );
 
 // Get purchase order by ID
 router.get(
   '/:id',
-  // authenticate,
+  authenticate,
   controller.findById
 );
 
 // Update purchase order (draft only)
 router.put(
   '/:id',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.update
 );
 
 // Cancel purchase order
 router.delete(
   '/:id',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.cancel
 );
 
@@ -89,48 +87,48 @@ router.delete(
 // Submit for approval
 router.put(
   '/:id/submit-for-approval',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.submitForApproval
 );
 
 // Approve
 router.put(
   '/:id/approve',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.approve
 );
 
 // Reject
 router.put(
   '/:id/reject',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.reject
 );
 
 // Send to supplier
 router.put(
   '/:id/send',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.sendToSupplier
 );
 
 // Acknowledge (supplier action)
 router.put(
   '/:id/acknowledge',
-  // authenticate,
-  // authorize(['supplier']),
+  authenticate,
+  authorize('supplier'),
   controller.acknowledge
 );
 
 // Receive
 router.put(
   '/:id/receive',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.receive
 );
 

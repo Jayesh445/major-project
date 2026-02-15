@@ -28,7 +28,7 @@ export const TriggeredByEnum = z.enum([
  */
 export const LineItemSchema = z.object({
   product: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid product ID'),
-  sku: z.string().min(3).max(50).toUpperCase(),
+  sku: z.string().min(3).max(50).transform((val) => val.toUpperCase()),
   orderedQty: z.number().min(1, 'Ordered quantity must be at least 1').int(),
   receivedQty: z.number().min(0, 'Received quantity cannot be negative').int().default(0),
   unitPrice: z.number().min(0, 'Unit price cannot be negative').positive(),
@@ -45,7 +45,11 @@ export const CreatePurchaseOrderSchema = z.object({
     .array(LineItemSchema)
     .min(1, 'At least one line item is required')
     .max(100, 'Maximum 100 line items allowed'),
-  currency: z.string().length(3, 'Currency must be 3-letter ISO code').default('INR').toUpperCase(),
+  currency: z
+    .string()
+    .length(3, 'Currency must be 3-letter ISO code')
+    .transform((val) => val.toUpperCase())
+    .default('INR'),
   triggeredBy: TriggeredByEnum.default('manual'),
   negotiationSession: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid negotiation session ID').optional(),
   expectedDeliveryDate: z.string().datetime().optional().or(z.date().optional()),

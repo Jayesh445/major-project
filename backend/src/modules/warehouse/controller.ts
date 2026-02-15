@@ -70,7 +70,7 @@ export class WarehouseController {
    * @access All authenticated users
    */
   findByCode = asyncHandler(async (req: Request, res: Response) => {
-    const { code } = req.params;
+    const code = Array.isArray(req.params.code) ? req.params.code[0] : req.params.code;
 
     const warehouse = await this.service.findByCode(code);
 

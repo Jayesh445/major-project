@@ -72,7 +72,7 @@ export class ProductService {
       filter.category = category;
     }
 
-    if (isActive !== undefined) {
+    if (typeof isActive === 'boolean') {
       filter.isActive = isActive;
     }
 

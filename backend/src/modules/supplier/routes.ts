@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { SupplierController } from './controller';
-
-// Import authentication and authorization middleware from user module
-// import { authenticate, authorize } from '@/modules/user/middleware';
+import { authenticate, authorize } from '@/middlewares';
 
 /**
  * Supplier routes
@@ -20,8 +18,8 @@ const controller = new SupplierController();
 // Get supplier statistics
 router.get(
   '/statistics',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.getStatistics
 );
 
@@ -32,38 +30,38 @@ router.get(
 // Create supplier
 router.post(
   '/',
-  // authenticate,
-  // authorize(['admin']),
+  authenticate,
+  authorize('admin'),
   controller.create
 );
 
 // Get all suppliers
 router.get(
   '/',
-  // authenticate,
+  authenticate,
   controller.findAll
 );
 
 // Get supplier by ID
 router.get(
   '/:id',
-  // authenticate,
+  authenticate,
   controller.findById
 );
 
 // Update supplier
 router.put(
   '/:id',
-  // authenticate,
-  // authorize(['admin', 'supplier']),
+  authenticate,
+  authorize('admin', 'supplier'),
   controller.update
 );
 
 // Delete supplier
 router.delete(
   '/:id',
-  // authenticate,
-  // authorize(['admin']),
+  authenticate,
+  authorize('admin'),
   controller.delete
 );
 
@@ -74,24 +72,24 @@ router.delete(
 // Add product to catalog
 router.post(
   '/:id/catalog',
-  // authenticate,
-  // authorize(['admin', 'supplier']),
+  authenticate,
+  authorize('admin', 'supplier'),
   controller.addCatalogProduct
 );
 
 // Update catalog product
 router.put(
   '/:id/catalog/:productId',
-  // authenticate,
-  // authorize(['admin', 'supplier']),
+  authenticate,
+  authorize('admin', 'supplier'),
   controller.updateCatalogProduct
 );
 
 // Remove product from catalog
 router.delete(
   '/:id/catalog/:productId',
-  // authenticate,
-  // authorize(['admin', 'supplier']),
+  authenticate,
+  authorize('admin', 'supplier'),
   controller.removeCatalogProduct
 );
 
@@ -102,8 +100,8 @@ router.delete(
 // Update contract terms
 router.put(
   '/:id/contract',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.updateContractTerms
 );
 
@@ -114,16 +112,16 @@ router.put(
 // Approve supplier
 router.put(
   '/:id/approve',
-  // authenticate,
-  // authorize(['admin']),
+  authenticate,
+  authorize('admin'),
   controller.approveSupplier
 );
 
 // Reject supplier
 router.put(
   '/:id/reject',
-  // authenticate,
-  // authorize(['admin']),
+  authenticate,
+  authorize('admin'),
   controller.rejectSupplier
 );
 
@@ -134,7 +132,7 @@ router.put(
 // Get supplier performance metrics
 router.get(
   '/:id/performance',
-  // authenticate,
+  authenticate,
   controller.getPerformanceMetrics
 );
 
