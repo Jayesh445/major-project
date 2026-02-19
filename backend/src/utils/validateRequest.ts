@@ -41,10 +41,10 @@ export const validateBody = (schema: ZodObject) => {
 /**
  * Validate only query parameters
  */
-export const validateQuery = (schema: ZodObject) => {
+export const validateQuery = (schema: ZodObject<any>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.query = await schema.parseAsync(req.query);
+      req.query = await schema.parseAsync(req.query) as any;
       next();
     } catch (error) {
       next(error);
@@ -55,10 +55,10 @@ export const validateQuery = (schema: ZodObject) => {
 /**
  * Validate only route parameters
  */
-export const validateParams = (schema: ZodObject) => {
+export const validateParams = (schema: ZodObject<any>) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      req.params = await schema.parseAsync(req.params);
+      req.params = await schema.parseAsync(req.params) as any;
       next();
     } catch (error) {
       next(error);

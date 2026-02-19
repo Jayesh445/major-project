@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiError } from '@/utils/ApiError';
-import { ZodError } from 'zod';
+import { ZodError, ZodIssue } from 'zod';
 import { MongooseError } from 'mongoose';
 
 /**
@@ -26,9 +26,10 @@ export const errorHandler = (
   else if (err instanceof ZodError) {
     statusCode = 400;
     message = 'Validation Error';
-    errors = err.errors.map((error) => ({
-      field: error.path.join('.'),
-      message: error.message,
+    const issues: ZodIssue[] = (err as any).issues ?? (err as any).errors ?? [];
+    errors = issues.map((issue) => ({
+      field: issue.path.join('.'),
+      message: issue.message,
     }));
   }
   // Handle Mongoose validation errors

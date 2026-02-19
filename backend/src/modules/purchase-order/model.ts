@@ -22,6 +22,7 @@ export type TriggeredBy = 'auto_replenishment' | 'manual' | 'negotiation_agent';
  * Line item in purchase order
  */
 export interface ILineItem {
+  _id?: mongoose.Types.ObjectId;
   product: mongoose.Types.ObjectId;
   sku: string;
   orderedQty: number;
@@ -37,7 +38,7 @@ export interface IPurchaseOrder extends Document {
   poNumber: string;
   supplier: mongoose.Types.ObjectId;
   warehouse: mongoose.Types.ObjectId;
-  lineItems: ILineItem[];
+  lineItems: mongoose.Types.DocumentArray<ILineItem>;
   totalAmount: number;
   currency: string;
   status: POStatus;
