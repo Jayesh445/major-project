@@ -33,7 +33,7 @@ export default function LandingPage() {
                 <Bot className="w-5 h-5 text-primary-foreground" />
               </div>
               <span className="font-display text-xl font-bold text-foreground">
-                VeriChain AI
+                StationeryChain
               </span>
             </div>
 
@@ -68,7 +68,7 @@ export default function LandingPage() {
                   <Moon className="w-4 h-4" />
                 )}
               </Button>
-              <Button onClick={() => router.push("/auth/signup")}>
+              <Button onClick={() => router.push("/signup")}>
                 Get Started
               </Button>
             </div>
@@ -118,7 +118,7 @@ export default function LandingPage() {
               >
                 How it Works
               </a>
-              <Button className="w-full">Get Started</Button>
+              <Button className="w-full" onClick={() => router.push("/signup")}>Get Started</Button>
             </div>
           </div>
         )}

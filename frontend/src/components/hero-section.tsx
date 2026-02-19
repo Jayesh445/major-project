@@ -52,7 +52,7 @@ export function HeroSection() {
               <Button
                 size="lg"
                 className="group"
-                onClick={() => router.push("/auth/signup")}
+                onClick={() => router.push("/signup")}
               >
                 Get Started Free
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />

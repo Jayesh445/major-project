@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
 import { Suspense } from "react";
 import "./globals.css";
+import { Providers } from "./providers";
 
 const clashDisplay = Clash_Display({
   subsets: ["latin"],
@@ -36,10 +37,9 @@ const satoshi = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "VeriChain AI - Smart Inventory & Supply Chain Management",
+  title: "StationeryChain - Smart Inventory & Supply Chain Management",
   description:
     "Autonomous AI agent that revolutionizes inventory management and supply chain operations with blockchain-powered trust and real-time insights.",
-  generator: "v0.app",
 };
 
 export default function RootLayout({
@@ -52,8 +52,10 @@ export default function RootLayout({
       <body
         className={`font-sans ${clashDisplay.variable} ${satoshi.variable} antialiased`}
       >
-        <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-        <Analytics />
+        <Providers>
+          <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+          <Analytics />
+        </Providers>
       </body>
     </html>
   );
