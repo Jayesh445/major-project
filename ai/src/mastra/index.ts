@@ -3,22 +3,22 @@ import { Mastra } from '@mastra/core/mastra';
 import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
 import { Observability, DefaultExporter, CloudExporter, SensitiveDataFilter } from '@mastra/observability';
-import { weatherWorkflow } from './workflows/weather-workflow';
+
 import { forecastWorkflow } from './workflows/forecast-workflow';
 import { warehouseOptimizationWorkflow } from './workflows/warehouse-optimization-workflow';
-import { weatherAgent } from './agents/weather-agent';
+
 import { forecastAgent } from './agents/forecast-agent';
 import { warehouseOptimizationAgent } from './agents/warehouse-optimization-agent';
 import { toolCallAppropriatenessScorer, completenessScorer, translationScorer } from './scorers/weather-scorer';
 
 export const mastra = new Mastra({
   workflows: {
-    weatherWorkflow,
+  
     forecastWorkflow,
     warehouseOptimizationWorkflow,
   },
   agents: {
-    weatherAgent,
+  
     forecastAgent,
     warehouseOptimizationAgent,
   },
