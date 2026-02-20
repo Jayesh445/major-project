@@ -1,53 +1,49 @@
+"use client"
+
 import { StatCard } from "@/components/business/stat-card"
 import { Users, Package, Warehouse, Truck } from "lucide-react"
 import { PageHeader } from "@/components/business/page-header"
-
-export const metadata = {
-  title: "Admin Dashboard - StationeryChain",
-  description: "Overview of system status and key metrics",
-}
+import { useAdminStats } from "@/hooks/queries/use-dashboard"
 
 export default function AdminDashboardPage() {
-  // TODO: Fetch real data using React Query
-  const stats = [
+  const { data: stats } = useAdminStats()
+
+  const statCards = [
     {
       title: "Total Users",
-      value: "128",
+      value: stats ? String(stats.totalUsers) : "—",
       icon: Users,
-      trend: { value: 12, isPositive: true },
       description: "Active users across all roles",
     },
     {
       title: "Total Products",
-      value: "1,234",
+      value: stats ? String(stats.totalProducts) : "—",
       icon: Package,
-      trend: { value: 2.5, isPositive: true },
       description: "Active products in catalog",
     },
     {
       title: "Warehouses",
-      value: "8",
+      value: stats ? String(stats.totalWarehouses) : "—",
       icon: Warehouse,
-      description: "Operating at 78% capacity",
+      description: `Operating at ${stats?.avgWarehouseUtilisation ?? "—"}% capacity`,
     },
     {
       title: "Active Suppliers",
-      value: "45",
+      value: stats ? String(stats.activeSuppliers) : "—",
       icon: Truck,
-      trend: { value: 4, isPositive: false },
-      description: "3 pending approval",
+      description: "Suppliers with active status",
     },
   ]
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Admin Dashboard" 
+      <PageHeader
+        title="Admin Dashboard"
         description="System overview and key performance indicators."
       />
-      
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
+        {statCards.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
       </div>

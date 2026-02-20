@@ -1,0 +1,55 @@
+graph LR
+    subgraph CORE["Core Infrastructure"]
+        ENV["config/env.ts\nZod validation"]
+        DB["config/database.ts\nMongoDB singleton"]
+        AUTH_MW["middlewares/auth.ts\nauthenticate / authorize"]
+        ERR_MW["middlewares/errorHandler.ts"]
+        UTILS["utils/\nApiError, asyncHandler\nresponseHandler, validateRequest"]
+    end
+
+    subgraph MODULES["Business Modules"]
+        USER["User\nauth + RBAC"]
+        PROD["Product\ncatalog + SKU"]
+        SUP["Supplier\ncatalog + contracts"]
+        WH["Warehouse\nzones + capacity"]
+        INV["Inventory\nstock + transactions"]
+        PO["Purchase Order\nlifecycle + approval"]
+        FC["Forecast\npredictions + MAPE"]
+        BL["Blockchain\nevent logs"]
+        NOTIF["Notification\nin-app + email"]
+    end
+
+    ENV --> DB
+    ENV --> AUTH_MW
+    DB --> USER
+    DB --> PROD
+    DB --> SUP
+    DB --> WH
+    DB --> INV
+    DB --> PO
+    DB --> FC
+    DB --> BL
+    DB --> NOTIF
+
+    AUTH_MW --> PROD
+    AUTH_MW --> SUP
+    AUTH_MW --> WH
+    AUTH_MW --> INV
+    AUTH_MW --> PO
+    AUTH_MW --> FC
+
+    USER --> AUTH_MW
+    PROD --> INV
+    WH --> INV
+    SUP --> PO
+    PROD --> PO
+    WH --> PO
+    INV --> PO
+
+    PO --> BL
+    INV --> BL
+    PO --> NOTIF
+    INV --> NOTIF
+    FC --> NOTIF
+    WH --> NOTIF
+    FC --> PO

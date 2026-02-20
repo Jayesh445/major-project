@@ -1,0 +1,77 @@
+graph TD
+    subgraph PAGES["Next.js Pages"]
+        AUTH_P["Auth Pages\n/login /signup /forgot-password"]
+        ADMIN_P["Admin Dashboard\n/dashboard/admin"]
+        WH_P["Warehouse Dashboard\n/dashboard/warehouse"]
+        PROC_P["Procurement Dashboard\n/dashboard/procurement"]
+        DEV_P["Dev Tools\n/dashboard/dev-tools/agent-monitor"]
+    end
+
+    PR["ProtectedRoute\nchecks isAuthenticated + role"]
+
+    subgraph STATE["State Management"]
+        ZUS["Zustand Auth Store\nuser + accessToken + refreshToken\nrefreshToken persisted to localStorage"]
+        RQ["TanStack Query Cache\nproducts / inventory / warehouses\nsuppliers / purchase-orders / users"]
+    end
+
+    subgraph HOOKS["React Query Hooks"]
+        H1["useProducts useCreateProduct\nuseUpdateProduct useDeleteProduct"]
+        H2["useInventory useAdjustStock\nuseTransferStock"]
+        H3["useWarehouses useCreateWarehouse"]
+        H4["useSuppliers useCreateSupplier"]
+        H5["usePurchaseOrders useCreatePO\nuseApprovePO useRejectPO"]
+        H6["useUsers useCreateUser"]
+    end
+
+    subgraph SERVICES["Service Layer"]
+        S1["authService"]
+        S2["productService"]
+        S3["inventoryService"]
+        S4["warehouseService"]
+        S5["supplierService"]
+        S6["poService"]
+        S7["userService"]
+    end
+
+    AX["Axios Client\nbaseURL NEXT_PUBLIC_API_URL\nRequest: attach Bearer token\nResponse: auto-refresh on 401"]
+
+    ADMIN_P --> PR
+    WH_P --> PR
+    PROC_P --> PR
+    DEV_P --> PR
+    PR --> ZUS
+
+    AUTH_P --> S1
+    S1 --> ZUS
+
+    ADMIN_P --> H1
+    ADMIN_P --> H3
+    ADMIN_P --> H4
+    ADMIN_P --> H6
+    WH_P --> H2
+    PROC_P --> H5
+    DEV_P --> RQ
+
+    H1 --> RQ
+    H2 --> RQ
+    H3 --> RQ
+    H4 --> RQ
+    H5 --> RQ
+    H6 --> RQ
+
+    RQ --> S2
+    RQ --> S3
+    RQ --> S4
+    RQ --> S5
+    RQ --> S6
+    RQ --> S7
+
+    S2 --> AX
+    S3 --> AX
+    S4 --> AX
+    S5 --> AX
+    S6 --> AX
+    S7 --> AX
+
+    AX --> ZUS
+    AX --> BE["Backend :5000"]

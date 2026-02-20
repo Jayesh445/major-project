@@ -22,7 +22,7 @@ import PurchaseOrder from '../modules/purchase-order/model';
 // ---------------------------------------------------------------------------
 
 const MONGODB_URI =
-  process.env.MONGODB_URI || 'mongodb://localhost:27017/supply-chain-management';
+  process.env.MONGODB_URI || 'mongodb://jayesh040405_db_user:thisIsNewPassword@ac-phmgerl-shard-00-00.j3buj6q.mongodb.net:27017,ac-phmgerl-shard-00-01.j3buj6q.mongodb.net:27017,ac-phmgerl-shard-00-02.j3buj6q.mongodb.net:27017/major_project?replicaSet=atlas-ieqoe1-shard-0&ssl=true&authSource=admin';
 
 const SHOULD_CLEAN = process.argv.includes('--clean');
 const HISTORY_DAYS = 90;

@@ -1,0 +1,72 @@
+graph TB
+    subgraph TRIGGERS["Agent Triggers"]
+        CRON["ForecastScheduler\nnode-cron 02:00 nightly"]
+        HTTP_F["POST /api/forecast"]
+        HTTP_O["POST /api/warehouse-optimization/analyze"]
+        DEV_UI["Dev Tools Dashboard"]
+    end
+
+    subgraph FA["Forecast Agent LangGraph"]
+        FA1["fetchHistoricalData\nqueryInventoryTransactions 90 days"]
+        FA2["fetchProductMeta\ngetProductMetadata"]
+        FA3["generateForecast\nGemini LLM call"]
+        FA4["calcConfidence\nstatistical post-processing"]
+        FA5["persistForecast\nupsert DemandForecast + Notification"]
+        FA1 --> FA2
+        FA2 --> FA3
+        FA3 --> FA4
+        FA4 --> FA5
+    end
+
+    subgraph OA["Optimization Agent LangGraph"]
+        OA1["fetchWarehouseData\ngetWarehouseStats"]
+        OA2["fetchMovementPatterns\ngetInventoryMovements 30 days"]
+        OA3["analyzeUtilization\ncompute zone percentages"]
+        OA4["generateRecs\nGemini LLM call"]
+        OA1 --> OA2
+        OA2 --> OA3
+        OA3 --> OA4
+    end
+
+    subgraph MASTRA["Mastra Module standalone port 4111"]
+        MA["Mastra Agent\ndeclarative config"]
+        MM["LibSQL Memory\npersistent conversation"]
+        ME["Evals Harness"]
+        MO["Observability traces"]
+        MA --> MM
+        MA --> ME
+        MA --> MO
+    end
+
+    subgraph LLM["LLM Layer"]
+        GEM["Google Gemini API\ngemini-pro temp 0.1"]
+        LS["LangSmith\noptional tracing"]
+    end
+
+    subgraph DB["MongoDB"]
+        DI["inventories"]
+        DP["products"]
+        DW["warehouses"]
+        DF["demandforecasts"]
+        DN["notifications"]
+    end
+
+    CRON --> FA
+    HTTP_F --> FA
+    HTTP_O --> OA
+    DEV_UI --> DF
+
+    FA1 --> DI
+    FA2 --> DP
+    FA5 --> DF
+    FA5 --> DN
+
+    OA1 --> DW
+    OA2 --> DI
+
+    FA3 --> GEM
+    OA4 --> GEM
+    MA --> GEM
+
+    FA3 -.-> LS
+    OA4 -.-> LS

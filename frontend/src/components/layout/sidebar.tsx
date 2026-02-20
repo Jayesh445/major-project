@@ -15,7 +15,9 @@ import {
   BarChart,
   Settings,
   LogOut,
-  Menu
+  Menu,
+  Bot,
+  RefreshCw,
 } from "lucide-react"
 import {
   Sheet,
@@ -25,6 +27,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { useState } from "react"
+import { useAuthStore } from "@/stores/auth-store"
+import { useRouter } from "next/navigation"
 
 interface SidebarProps {
   className?: string
@@ -40,6 +44,11 @@ const commonRoutes = [
 ]
 
 const adminRoutes = [
+  {
+    title: "Admin Overview",
+    href: "/dashboard/admin",
+    icon: LayoutDashboard,
+  },
   {
     title: "Users",
     href: "/dashboard/admin/users",
@@ -65,9 +74,19 @@ const adminRoutes = [
     href: "/dashboard/admin/analytics",
     icon: BarChart,
   },
+  {
+    title: "Agent Monitor",
+    href: "/dashboard/dev-tools/agent-monitor",
+    icon: Bot,
+  },
 ]
 
 const warehouseRoutes = [
+  {
+    title: "Warehouse Overview",
+    href: "/dashboard/warehouse",
+    icon: LayoutDashboard,
+  },
   {
     title: "Inventory",
     href: "/dashboard/warehouse/inventory",
@@ -83,18 +102,43 @@ const warehouseRoutes = [
     href: "/dashboard/warehouse/transfers",
     icon: Warehouse,
   },
+  {
+    title: "Replenishment",
+    href: "/dashboard/procurement/replenishment",
+    icon: RefreshCw,
+  },
+  {
+    title: "Agent Monitor",
+    href: "/dashboard/dev-tools/agent-monitor",
+    icon: Bot,
+  },
 ]
 
 const procurementRoutes = [
+  {
+    title: "Procurement Overview",
+    href: "/dashboard/procurement",
+    icon: LayoutDashboard,
+  },
   {
     title: "Purchase Orders",
     href: "/dashboard/procurement/orders",
     icon: ShoppingCart,
   },
   {
+    title: "Replenishment",
+    href: "/dashboard/procurement/replenishment",
+    icon: RefreshCw,
+  },
+  {
     title: "Cost Analysis",
     href: "/dashboard/procurement/costs",
     icon: BarChart,
+  },
+  {
+    title: "Agent Monitor",
+    href: "/dashboard/dev-tools/agent-monitor",
+    icon: Bot,
   },
 ]
 

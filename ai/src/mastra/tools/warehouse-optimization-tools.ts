@@ -1,15 +1,6 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
-
-// These imports will need to be accessible from the Mastra app
-// You'll need to set up database connection in the Mastra app
-interface WarehouseModel {
-  find: (query: any) => any;
-}
-
-interface InventoryModel {
-  find: (query: any) => any;
-}
+import { getActiveWarehouses, getAllInventory } from '../api-client.js';
 
 // Tool: Fetch all active warehouses with capacity information
 export const fetchWarehousesTool = createTool({
@@ -26,37 +17,25 @@ export const fetchWarehousesTool = createTool({
         totalCapacity: z.number(),
         usedCapacity: z.number(),
         utilizationPercent: z.number(),
-        location: z.object({
-          city: z.string(),
-          state: z.string(),
-        }),
+        location: z.object({ city: z.string(), state: z.string() }),
       })
     ),
   }),
-  execute: async (_inputData, { requestContext }) => {
-    const { Warehouse } = requestContext as { Warehouse: WarehouseModel };
+  execute: async (_inputData) => {
+    const warehouses = await getActiveWarehouses();
 
-    const warehouses = await Warehouse.find({ isActive: true })
-      .select('name code location totalCapacity usedCapacity')
-      .lean();
-
-    const result = warehouses.map((wh: any) => ({
+    const result = warehouses.map((wh) => ({
       id: wh._id.toString(),
       name: wh.name,
       code: wh.code,
       totalCapacity: wh.totalCapacity,
       usedCapacity: wh.usedCapacity,
-      utilizationPercent: (wh.usedCapacity / wh.totalCapacity) * 100,
-      location: {
-        city: wh.location.city,
-        state: wh.location.state,
-      },
+      utilizationPercent:
+        wh.totalCapacity > 0 ? (wh.usedCapacity / wh.totalCapacity) * 100 : 0,
+      location: { city: wh.location.city, state: wh.location.state },
     }));
 
-    return {
-      count: result.length,
-      warehouses: result,
-    };
+    return { count: result.length, warehouses: result };
   },
 });
 
@@ -85,34 +64,26 @@ export const fetchInventoryDataTool = createTool({
       })
     ),
   }),
-  execute: async (_inputData, { requestContext }) => {
-    const { Inventory } = requestContext as { Inventory: InventoryModel };
-
-    const inventories = await Inventory.find({})
-      .populate('product', 'name sku isActive')
-      .populate('warehouse', 'name code isActive')
-      .lean();
+  execute: async (_inputData) => {
+    const inventories = await getAllInventory();
 
     // Filter for active products and warehouses
-    const activeInventories = inventories.filter(
+    const active = inventories.filter(
       (inv: any) => inv.product?.isActive && inv.warehouse?.isActive
     );
 
     // Group by warehouse
-    const warehouseMap = new Map();
+    const warehouseMap = new Map<string, any>();
 
-    activeInventories.forEach((inv: any) => {
+    active.forEach((inv: any) => {
       const whId = inv.warehouse._id.toString();
-      const whName = inv.warehouse.name;
-
       if (!warehouseMap.has(whId)) {
         warehouseMap.set(whId, {
           warehouseId: whId,
-          warehouseName: whName,
+          warehouseName: inv.warehouse.name,
           products: [],
         });
       }
-
       warehouseMap.get(whId).products.push({
         productId: inv.product._id.toString(),
         productName: inv.product.name,
@@ -141,22 +112,14 @@ export const calculateDistanceTool = createTool({
     toCity: z.string(),
     toState: z.string(),
   }),
-  outputSchema: z.object({
-    distance: z.number(),
-    unit: z.string(),
-  }),
+  outputSchema: z.object({ distance: z.number(), unit: z.string() }),
   execute: async (inputData) => {
-    // Simplified distance calculation
-    // In production, use actual distance API or lookup table
     if (inputData.fromCity === inputData.toCity && inputData.fromState === inputData.toState) {
       return { distance: 0, unit: 'km' };
     }
-
     if (inputData.fromState === inputData.toState) {
-      return { distance: 150, unit: 'km' }; // Same state, different cities
+      return { distance: 150, unit: 'km' };
     }
-
-    // Different states - rough estimate
     return { distance: 500, unit: 'km' };
   },
 });

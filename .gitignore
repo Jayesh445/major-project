@@ -1,4 +1,4 @@
 backend/.env
 .claude
 /.claude/**
-*.md
+

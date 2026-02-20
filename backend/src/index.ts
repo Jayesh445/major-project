@@ -11,6 +11,9 @@ import inventoryRoutes from '@/modules/inventory/routes';
 import purchaseOrderRoutes from '@/modules/purchase-order/routes';
 import forecastRoutes from '@/modules/forecast/routes/forecast.routes';
 import optimizationRoutes from '@/modules/warehouse-optimization/routes/optimization.routes';
+import dashboardRoutes from '@/modules/dashboard/dashboard.routes';
+import internalRoutes from '@/modules/internal/internal.routes';
+import { internalAuth } from '@/middlewares/internalAuth';
 import { ForecastScheduler } from '@/modules/forecast/services/scheduler.service';
 
 const app: Express = express();
@@ -35,6 +38,8 @@ app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/purchase-orders', purchaseOrderRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/warehouse-optimization', optimizationRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/internal', internalAuth, internalRoutes);
 
 // Example route using utilities
 app.get(

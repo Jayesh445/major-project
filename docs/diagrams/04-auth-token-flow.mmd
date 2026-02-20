@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant U as User
+    participant FE as Frontend Zustand + Axios
+    participant BE as Backend /api/v1/users
+    participant DB as MongoDB
+
+    Note over U,DB: LOGIN
+    U->>FE: submit email + password
+    FE->>BE: POST /users/login
+    BE->>DB: find user by email
+    DB-->>BE: user doc with passwordHash
+    BE->>BE: bcrypt.compare password hash
+    BE->>BE: sign accessToken 15m
+    BE->>BE: sign refreshToken 7d
+    BE->>DB: push refreshToken to user.refreshTokens
+    BE-->>FE: user + accessToken + refreshToken
+    FE->>FE: setTokens + setUser in Zustand
+    FE->>FE: persist user + refreshToken to localStorage
+
+    Note over U,DB: AUTHENTICATED REQUEST
+    U->>FE: user action
+    FE->>BE: GET /resource + Authorization Bearer AT
+    BE->>BE: verifyToken -> userId email role
+    BE-->>FE: 200 data
+
+    Note over U,DB: AUTO REFRESH on 401
+    FE->>BE: any request -> 401 Unauthorized
+    FE->>BE: POST /users/refresh-token with refreshToken
+    BE->>DB: find user with matching refreshToken
+    BE->>BE: verify not expired
+    BE->>BE: issue new accessToken + refreshToken
+    BE->>DB: replace old refreshToken
+    BE-->>FE: new accessToken + refreshToken
+    FE->>FE: setTokens with new tokens
+    FE->>BE: retry original request with new AT
+
+    Note over U,DB: LOGOUT
+    U->>FE: logout action
+    FE->>BE: POST /users/logout with refreshToken
+    BE->>DB: remove refreshToken from user.refreshTokens
+    BE-->>FE: 200 OK
+    FE->>FE: logout -> clear Zustand + localStorage
+    FE->>U: redirect to /login

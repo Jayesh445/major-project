@@ -1,0 +1,33 @@
+sequenceDiagram
+    participant C as Client
+    participant MW as Middleware
+    participant AU as authenticate()
+    participant AZ as authorize()
+    participant V as validateBody()
+    participant CT as Controller
+    participant SV as Service
+    participant DB as MongoDB
+    participant EH as errorHandler
+
+    C->>MW: HTTP Request + Bearer token
+    MW->>AU: extract + verify JWT
+
+    alt token valid
+        AU->>AZ: attach req.user
+        AZ->>V: check role
+        V->>CT: validate Zod schema
+        CT->>SV: delegate to service
+        SV->>DB: Mongoose query
+        DB-->>SV: document
+        SV-->>CT: result
+        CT-->>C: sendSuccess 200
+    else token invalid
+        AU->>EH: ApiError 401
+        EH-->>C: success false statusCode 401
+    else role forbidden
+        AZ->>EH: ApiError 403
+        EH-->>C: success false statusCode 403
+    else validation fails
+        V->>EH: ZodError
+        EH-->>C: success false statusCode 400 errors array
+    end

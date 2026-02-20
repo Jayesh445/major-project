@@ -2,64 +2,64 @@
 
 import { AgentActivityCard, AgentActivity } from "@/components/business/agent-activity-card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { useState, useEffect } from "react"
-
-const mockActivities: AgentActivity[] = [
-  {
-    timestamp: "10:42:15",
-    agent: "Replenishment Agent",
-    action: "Analyzed stock levels for SKU: PEN-001",
-    status: "success",
-    duration: "120ms",
-  },
-  {
-    timestamp: "10:42:18",
-    agent: "Replenishment Agent",
-    action: "Forecasted demand: 500 units (Confidence: 92%)",
-    status: "success",
-    duration: "450ms",
-  },
-  {
-    timestamp: "10:42:20",
-    agent: "Supplier Agent",
-    action: "Checked availability for supplier: ABC Supplies",
-    status: "pending",
-  },
-  {
-    timestamp: "10:30:05",
-    agent: "Order Agent",
-    action: "Failed to validate PO #12345: Invalid SKU",
-    status: "error",
-    duration: "50ms",
-  },
-]
+import { useAgentStats } from "@/hooks/queries/use-dashboard"
+import { Loader2 } from "lucide-react"
 
 export function ActivityLog() {
-  const [activities, setActivities] = useState<AgentActivity[]>(mockActivities)
+  const { data: agentStats, isLoading } = useAgentStats()
 
-  // Simulate real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newActivity: AgentActivity = {
-        timestamp: new Date().toLocaleTimeString(),
-        agent: "System Monitor",
-        action: "Health check completed",
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[600px] text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading activity…
+      </div>
+    )
+  }
+
+  const activities: AgentActivity[] = []
+
+  // Map recent forecasts to activity entries
+  if (agentStats?.recentForecasts) {
+    for (const f of agentStats.recentForecasts) {
+      const product = typeof f.product === "object" ? f.product : null
+      const warehouse = typeof f.warehouse === "object" ? f.warehouse : null
+      activities.push({
+        timestamp: new Date(f.forecastedAt).toLocaleTimeString(),
+        agent: "Forecast Agent",
+        action: `Generated 7-day forecast for ${product?.name ?? f.product} @ ${warehouse?.code ?? f.warehouse} — reorder qty: ${f.recommendedReorderQty ?? "N/A"}`,
         status: "success",
-        duration: "10ms",
-      }
-      setActivities((prev) => [newActivity, ...prev])
-    }, 5000)
+        duration: "—",
+      })
+    }
+  }
 
-    return () => clearInterval(interval)
-  }, [])
+  // Add latest optimization as an entry
+  if (agentStats?.latestOptimization) {
+    const opt = agentStats.latestOptimization
+    activities.push({
+      timestamp: new Date(opt.generatedAt).toLocaleTimeString(),
+      agent: "Warehouse Optimization Agent",
+      action: `Generated ${opt.transferRecommendations?.length ?? 0} transfer recommendations — ${opt.reallocationSummary?.slice(0, 80)}…`,
+      status: opt.status === "rejected" ? "error" : "success",
+      duration: `${opt.generationDurationSeconds?.toFixed(1) ?? "—"}s`,
+    })
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-[600px] text-muted-foreground">
+        No agent activity yet. Run the Forecast or Warehouse Optimization agent to see results.
+      </div>
+    )
+  }
 
   return (
     <ScrollArea className="h-[600px] pr-4">
       <div className="space-y-4">
         {activities.map((activity, index) => (
-          <AgentActivityCard 
-            key={index} 
-            activity={activity} 
+          <AgentActivityCard
+            key={index}
+            activity={activity}
             onClick={() => console.log("View details", activity)}
           />
         ))}

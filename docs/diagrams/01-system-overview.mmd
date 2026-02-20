@@ -1,0 +1,72 @@
+graph TB
+    subgraph CLIENT["Client Layer"]
+        BROWSER["Browser"]
+        subgraph FRONTEND["Next.js 16 — port 3000"]
+            PAGES["App Router Pages"]
+            STORE["Zustand Auth Store"]
+            RQ["TanStack React Query"]
+            SVC["Service Layer"]
+            AXIOS["Axios Client"]
+        end
+    end
+
+    subgraph BACKEND["Backend — Express.js port 5000"]
+        MW["Middleware Stack"]
+        subgraph MODULES["API Modules /api/v1"]
+            USER["User"]
+            PROD["Product"]
+            WH["Warehouse"]
+            INV["Inventory"]
+            SUP["Supplier"]
+            PO["Purchase Order"]
+            FC["Forecast"]
+            BL["Blockchain"]
+            NOTIF["Notification"]
+        end
+        subgraph AI_BACKEND["AI Agents /api"]
+            FA["Forecast Agent LangGraph"]
+            OA["Optimization Agent LangGraph"]
+            SCHED["ForecastScheduler node-cron"]
+        end
+        EH["Error Handler"]
+    end
+
+    subgraph AI_MODULE["Mastra AI Module — standalone"]
+        MASTRA["Mastra 1.4.0"]
+        MEM["LibSQL Memory"]
+        EVALS["Mastra Evals"]
+        OBS["Observability"]
+    end
+
+    subgraph EXTERNAL["External Services"]
+        GEMINI["Google Gemini API"]
+        LANGSMITH["LangSmith optional"]
+        ATLAS["MongoDB Atlas"]
+    end
+
+    BROWSER --> FRONTEND
+    AXIOS --> MW
+    MW --> MODULES
+    MW --> AI_BACKEND
+    MODULES --> EH
+    AI_BACKEND --> EH
+
+    FA --> GEMINI
+    OA --> GEMINI
+    FA -.-> LANGSMITH
+    OA -.-> LANGSMITH
+    SCHED --> FA
+
+    MASTRA --> GEMINI
+    MASTRA --> MEM
+    MASTRA --> EVALS
+    MASTRA --> OBS
+
+    MODULES --> ATLAS
+    FA --> ATLAS
+    MEM --> ATLAS
+
+    PAGES --> RQ
+    RQ --> SVC
+    SVC --> AXIOS
+    AXIOS --> STORE

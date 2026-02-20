@@ -1,51 +1,52 @@
+"use client"
+
 import { StatCard } from "@/components/business/stat-card"
 import { ShoppingCart, Clock, CheckCircle, TrendingUp } from "lucide-react"
 import { PageHeader } from "@/components/business/page-header"
-
-export const metadata = {
-  title: "Procurement Dashboard - StationeryChain",
-  description: "Procurement overview and spending analysis",
-}
+import { useProcurementStats } from "@/hooks/queries/use-dashboard"
 
 export default function ProcurementDashboardPage() {
-  const stats = [
+  const { data: stats } = useProcurementStats()
+
+  const formatCurrency = (amount: number) =>
+    `₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+
+  const statCards = [
     {
       title: "Total Spend (MTD)",
-      value: "₹2,45,000",
+      value: stats ? formatCurrency(stats.totalSpendMTD) : "—",
       icon: TrendingUp,
-      trend: { value: 12, isPositive: false }, // Spending up is "negative" usually, depends on context
-      description: "Vs previous month",
+      description: "Month-to-date spend on POs",
     },
     {
       title: "Pending Approvals",
-      value: "5",
+      value: stats ? String(stats.pendingApprovals) : "—",
       icon: Clock,
       description: "POs awaiting authorization",
     },
     {
       title: "Open Orders",
-      value: "18",
+      value: stats ? String(stats.openOrders) : "—",
       icon: ShoppingCart,
       description: "Orders not yet received",
     },
     {
       title: "Fulfilled Orders",
-      value: "142",
+      value: stats ? String(stats.fulfilledThisMonth) : "—",
       icon: CheckCircle,
-      trend: { value: 8, isPositive: true },
-      description: "This month",
+      description: "Fully received this month",
     },
   ]
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Procurement Dashboard" 
+      <PageHeader
+        title="Procurement Dashboard"
         description="Overview of purchasing activities and costs."
       />
-      
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat, index) => (
+        {statCards.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
       </div>
