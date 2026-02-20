@@ -1,9 +1,6 @@
 import { Router } from 'express';
 import { ProductController } from './controller';
-
-// Import authentication and authorization middleware from user module
-// Adjust the import path based on your actual middleware location
-// import { authenticate, authorize } from '@/modules/user/middleware';
+import { authenticate, authorize } from '@/middlewares';
 
 /**
  * Product routes
@@ -22,45 +19,45 @@ const controller = new ProductController();
 // Search products
 router.get(
   '/search',
-  // authenticate,
+  authenticate,
   controller.search
 );
 
 // Get product statistics
 router.get(
   '/statistics',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.getStatistics
 );
 
 // Get low stock products
 router.get(
   '/low-stock',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'warehouse_manager', 'procurement_officer'),
   controller.getLowStockProducts
 );
 
 // Get products by category
 router.get(
   '/category/:category',
-  // authenticate,
+  authenticate,
   controller.findByCategory
 );
 
 // Get product by SKU
 router.get(
   '/sku/:sku',
-  // authenticate,
+  authenticate,
   controller.findBySku
 );
 
 // Bulk upload products
 router.post(
   '/bulk-upload',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.bulkUpload
 );
 
@@ -71,38 +68,38 @@ router.post(
 // Create product
 router.post(
   '/',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.create
 );
 
 // Get all products (with filtering and pagination)
 router.get(
   '/',
-  // authenticate,
+  authenticate,
   controller.findAll
 );
 
 // Get product by ID
 router.get(
   '/:id',
-  // authenticate,
+  authenticate,
   controller.findById
 );
 
 // Update product
 router.put(
   '/:id',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.update
 );
 
 // Soft delete product
 router.delete(
   '/:id',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.softDelete
 );
 

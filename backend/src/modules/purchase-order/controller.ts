@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { PurchaseOrderService } from './service';
 import { ApiResponse } from '@/utils/ApiResponse';
 import { asyncHandler } from '@/utils/asyncHandler';
+import type { AuthRequest } from '@/middlewares';
 import {
   CreatePurchaseOrderSchema,
   UpdatePurchaseOrderSchema,
@@ -26,7 +27,7 @@ export class PurchaseOrderController {
    */
   create = asyncHandler(async (req: Request, res: Response) => {
     const dto = CreatePurchaseOrderSchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const po = await this.service.create(dto, userId);
 
@@ -71,7 +72,9 @@ export class PurchaseOrderController {
    * @access All authenticated users
    */
   findByPONumber = asyncHandler(async (req: Request, res: Response) => {
-    const { poNumber } = req.params;
+    const poNumber = Array.isArray(req.params.poNumber)
+      ? req.params.poNumber[0]
+      : req.params.poNumber;
 
     const po = await this.service.findByPONumber(poNumber);
 
@@ -126,7 +129,7 @@ export class PurchaseOrderController {
   approve = asyncHandler(async (req: Request, res: Response) => {
     const { id } = PurchaseOrderIdSchema.parse(req.params);
     const dto = ApprovePurchaseOrderSchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const po = await this.service.approve(id, userId, dto.notes);
 
@@ -193,7 +196,7 @@ export class PurchaseOrderController {
   receive = asyncHandler(async (req: Request, res: Response) => {
     const { id } = PurchaseOrderIdSchema.parse(req.params);
     const dto = ReceivePurchaseOrderSchema.parse(req.body);
-    const userId = (req as any).user?.id || 'system';
+    const userId = (req as AuthRequest).user?.userId || 'system';
 
     const po = await this.service.receive(id, dto, userId);
 

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import PurchaseOrder, { IPurchaseOrder, ILineItem, POStatus } from './model';
 import { ApiError } from '@/utils/ApiError';
 import type {
@@ -40,8 +41,13 @@ export class PurchaseOrderService {
       await this.validateProduct(item.product);
     }
 
+    const lineItems = dto.lineItems.map((item) => ({
+      ...item,
+      product: new mongoose.Types.ObjectId(item.product),
+    })) as ILineItem[];
+
     // Calculate total amount
-    const totalAmount = dto.lineItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const totalAmount = lineItems.reduce((sum, item) => sum + item.totalPrice, 0);
 
     // Generate PO number
     const poNumber = await this.generatePONumber();
@@ -51,7 +57,7 @@ export class PurchaseOrderService {
       poNumber,
       supplier: dto.supplier,
       warehouse: dto.warehouse,
-      lineItems: dto.lineItems,
+      lineItems,
       totalAmount,
       currency: dto.currency,
       status: 'draft',
@@ -199,10 +205,15 @@ export class PurchaseOrderService {
         await this.validateProduct(item.product);
       }
 
-      po.lineItems = dto.lineItems as ILineItem[];
+      const updatedLineItems = dto.lineItems.map((item) => ({
+        ...item,
+        product: new mongoose.Types.ObjectId(item.product),
+      })) as ILineItem[];
+
+      po.set('lineItems', updatedLineItems);
 
       // Recalculate total amount
-      po.totalAmount = dto.lineItems.reduce((sum, item) => sum + item.totalPrice, 0);
+      po.totalAmount = updatedLineItems.reduce((sum, item) => sum + item.totalPrice, 0);
     }
 
     if (dto.expectedDeliveryDate) {

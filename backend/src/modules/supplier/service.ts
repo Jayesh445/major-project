@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Supplier, { ISupplier, ICatalogProduct } from './model';
 import { ApiError } from '@/utils/ApiError';
 import type {
@@ -185,7 +186,12 @@ export class SupplierService {
     await this.validateProduct(productDto.product);
 
     // Add product to catalog
-    supplier.catalogProducts.push(productDto as ICatalogProduct);
+    const catalogProduct: ICatalogProduct = {
+      ...productDto,
+      product: new mongoose.Types.ObjectId(productDto.product),
+    };
+
+    supplier.catalogProducts.push(catalogProduct);
     await supplier.save();
 
     return supplier;

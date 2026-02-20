@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { InventoryController } from './controller';
-
-// Import authentication and authorization middleware from user module
-// import { authenticate, authorize } from '@/modules/user/middleware';
+import { authenticate, authorize } from '@/middlewares';
 
 /**
  * Inventory routes
@@ -20,30 +18,30 @@ const controller = new InventoryController();
 // Get low stock items
 router.get(
   '/low-stock',
-  // authenticate,
+  authenticate,
   controller.getLowStockItems
 );
 
 // Transfer stock between warehouses
 router.post(
   '/transfer',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.transferStock
 );
 
 // Get stock report
 router.get(
   '/stock-report',
-  // authenticate,
+  authenticate,
   controller.getStockReport
 );
 
 // Get inventory valuation
 router.get(
   '/valuation',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.getValuation
 );
 
@@ -54,22 +52,22 @@ router.get(
 // Initialize inventory
 router.post(
   '/',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.initialize
 );
 
 // Get all inventory
 router.get(
   '/',
-  // authenticate,
+  authenticate,
   controller.findAll
 );
 
 // Get inventory by ID
 router.get(
   '/:id',
-  // authenticate,
+  authenticate,
   controller.findById
 );
 
@@ -80,38 +78,38 @@ router.get(
 // Adjust stock
 router.put(
   '/:id/adjust',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.adjustStock
 );
 
 // Reserve stock
 router.post(
   '/:id/reserve',
-  // authenticate,
+  authenticate,
   controller.reserveStock
 );
 
 // Release reservation
 router.post(
   '/:id/release',
-  // authenticate,
+  authenticate,
   controller.releaseReservation
 );
 
 // Update reorder settings
 router.put(
   '/:id/reorder-settings',
-  // authenticate,
-  // authorize(['admin', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'procurement_officer'),
   controller.updateReorderSettings
 );
 
 // Trigger replenishment
 router.post(
   '/:id/trigger-replenishment',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager', 'procurement_officer']),
+  authenticate,
+  authorize('admin', 'warehouse_manager', 'procurement_officer'),
   controller.triggerReplenishment
 );
 
@@ -122,7 +120,7 @@ router.post(
 // Get transaction history
 router.get(
   '/:id/transactions',
-  // authenticate,
+  authenticate,
   controller.getTransactionHistory
 );
 

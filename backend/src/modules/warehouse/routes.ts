@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import { WarehouseController } from './controller';
-
-// Import authentication and authorization middleware from user module
-// import { authenticate, authorize } from '@/modules/user/middleware';
+import { authenticate, authorize } from '@/middlewares';
 
 /**
  * Warehouse routes
@@ -20,15 +18,15 @@ const controller = new WarehouseController();
 // Get warehouse statistics
 router.get(
   '/statistics',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.getStatistics
 );
 
 // Get warehouse by code
 router.get(
   '/code/:code',
-  // authenticate,
+  authenticate,
   controller.findByCode
 );
 
@@ -39,38 +37,38 @@ router.get(
 // Create warehouse
 router.post(
   '/',
-  // authenticate,
-  // authorize(['admin']),
+  authenticate,
+  authorize('admin'),
   controller.create
 );
 
 // Get all warehouses
 router.get(
   '/',
-  // authenticate,
+  authenticate,
   controller.findAll
 );
 
 // Get warehouse by ID
 router.get(
   '/:id',
-  // authenticate,
+  authenticate,
   controller.findById
 );
 
 // Update warehouse
 router.put(
   '/:id',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.update
 );
 
 // Delete warehouse
 router.delete(
   '/:id',
-  // authenticate,
-  // authorize(['admin']),
+  authenticate,
+  authorize('admin'),
   controller.delete
 );
 
@@ -81,24 +79,24 @@ router.delete(
 // Add zone to warehouse
 router.post(
   '/:id/zones',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.addZone
 );
 
 // Update zone
 router.put(
   '/:id/zones/:zoneId',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.updateZone
 );
 
 // Remove zone
 router.delete(
   '/:id/zones/:zoneId',
-  // authenticate,
-  // authorize(['admin', 'warehouse_manager']),
+  authenticate,
+  authorize('admin', 'warehouse_manager'),
   controller.removeZone
 );
 
@@ -109,14 +107,14 @@ router.delete(
 // Get capacity report
 router.get(
   '/:id/capacity-report',
-  // authenticate,
+  authenticate,
   controller.getCapacityReport
 );
 
 // Get inventory summary
 router.get(
   '/:id/inventory-summary',
-  // authenticate,
+  authenticate,
   controller.getInventorySummary
 );
 

@@ -104,10 +104,15 @@ export const QueryProductsSchema = z.object({
     .transform((val) => parseInt(val, 10))
     .pipe(z.number().min(1).max(100)),
   category: ProductCategoryEnum.optional(),
-  isActive: z
-    .string()
-    .optional()
-    .transform((val) => val === 'true'),
+  isActive: z.preprocess(
+    (val) => {
+      if (val === undefined) return undefined;
+      if (val === 'true') return true;
+      if (val === 'false') return false;
+      return val;
+    },
+    z.boolean().optional()
+  ),
   primarySupplier: z
     .string()
     .regex(/^[0-9a-fA-F]{24}$/, 'Invalid supplier ID')

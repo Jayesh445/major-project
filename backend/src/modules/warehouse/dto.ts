@@ -32,7 +32,7 @@ export const LocationSchema = z.object({
   address: z.string().min(5, 'Address must be at least 5 characters').trim(),
   city: z.string().min(2, 'City must be at least 2 characters').trim(),
   state: z.string().min(2, 'State must be at least 2 characters').trim(),
-  country: z.string().default('India').trim(),
+  country: z.string().trim().default('India'),
   pincode: z
     .string()
     .regex(/^\d{6}$/, 'Pincode must be 6 digits')
