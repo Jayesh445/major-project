@@ -41,6 +41,7 @@ class Database {
     }
 
     const mongoUri = uri || process.env.MONGODB_URI;
+    console.log(mongoUri);
 
     if (!mongoUri) {
       throw new Error(
