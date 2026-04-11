@@ -1,0 +1,105 @@
+{
+  "timestamp": "2026-04-11T03:44:13.182Z",
+  "summary": {
+    "total": 15,
+    "pass": 14,
+    "fail": 1,
+    "skip": 0,
+    "successRate": 93.33333333333333,
+    "avgWorkflowMs": 59229,
+    "minWorkflowMs": 105,
+    "maxWorkflowMs": 123890
+  },
+  "results": [
+    {
+      "name": "GET Mastra API root",
+      "status": "PASS",
+      "ms": 4,
+      "detail": "Mastra up"
+    },
+    {
+      "name": "GET /api/agents/status",
+      "status": "FAIL",
+      "ms": 6,
+      "detail": "404 {\"success\":false,\"statusCode\":404,\"message\":\"Route /api/agents/status not found\""
+    },
+    {
+      "name": "  - 9 agents registered",
+      "status": "PASS",
+      "ms": 128,
+      "detail": ""
+    },
+    {
+      "name": "  - 62 forecasts, 15 negotiations",
+      "status": "PASS",
+      "ms": 0,
+      "detail": ""
+    },
+    {
+      "name": "POST /api/agents/procurement/check",
+      "status": "PASS",
+      "ms": 105,
+      "detail": "{\"status\":\"success\",\"steps\":{\"input\":{\"productId\":\"69d88ada6e53869074a14967\",\"wa"
+    },
+    {
+      "name": "POST /api/agents/anomaly-detection/scan",
+      "status": "PASS",
+      "ms": 19781,
+      "detail": "{\"status\":\"success\",\"steps\":{\"input\":{},\"collect-system-data\":{\"payload\":{},\"sta"
+    },
+    {
+      "name": "POST /api/agents/smart-reorder/run",
+      "status": "PASS",
+      "ms": 123397,
+      "detail": "{\"status\":\"success\",\"steps\":{\"input\":{},\"scan-inventory-for-reorder\":{\"payload\":"
+    },
+    {
+      "name": "POST /api/agents/supplier-evaluation/run",
+      "status": "PASS",
+      "ms": 28973,
+      "detail": "{\"status\":\"success\",\"steps\":{\"input\":{},\"gather-supplier-data\":{\"payload\":{},\"st"
+    },
+    {
+      "name": "POST /api/agents/negotiation/trigger",
+      "status": "PASS",
+      "ms": 123890,
+      "detail": "{\"status\":\"failed\",\"steps\":{\"input\":{\"productId\":\"69d88ada6e53869074a14967\",\"war"
+    },
+    {
+      "name": "GET /api/agents/negotiation/sessions",
+      "status": "PASS",
+      "ms": 353,
+      "detail": "15 sessions"
+    },
+    {
+      "name": "  - Latest: ? - accepted",
+      "status": "PASS",
+      "ms": 0,
+      "detail": "rounds=1"
+    },
+    {
+      "name": "  - Final: Rs.140/unit (11.92% saved)",
+      "status": "PASS",
+      "ms": 0,
+      "detail": ""
+    },
+    {
+      "name": "GET session details",
+      "status": "PASS",
+      "ms": 80,
+      "detail": "1 rounds fetched"
+    },
+    {
+      "name": "GET /api/agents/blockchain/logs",
+      "status": "PASS",
+      "ms": 38,
+      "detail": "20 logs"
+    },
+    {
+      "name": "  - Events: po_created=8, po_approved=6, po_received=3, po_sent=3",
+      "status": "PASS",
+      "ms": 0,
+      "detail": ""
+    }
+  ]
+}

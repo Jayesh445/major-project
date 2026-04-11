@@ -37,7 +37,7 @@ const satoshi = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "StationeryChain - Smart Inventory & Supply Chain Management",
+  title: "AutoStock AI - Autonomous Supply Chain Management",
   description:
     "Autonomous AI agent that revolutionizes inventory management and supply chain operations with blockchain-powered trust and real-time insights.",
 };

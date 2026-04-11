@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { productSchema, ProductInput } from "@/lib/validators/product.validator"
 import { useCreateProduct, useUpdateProduct } from "@/hooks/queries/use-products"
+import { useSuppliers } from "@/hooks/queries/use-suppliers"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -34,6 +35,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
   const router = useRouter()
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct()
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct()
+  const { data: suppliersData } = useSuppliers()
+  const suppliersList = suppliersData?.data || []
   
   const isEditing = !!initialData
   const isPending = isCreating || isUpdating
@@ -258,10 +261,21 @@ export function ProductForm({ initialData }: ProductFormProps) {
           name="primarySupplier"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Primary Supplier (ID)</FormLabel>
-              <FormControl>
-                <Input placeholder="Supplier ID (will be dropdown)" {...field} />
-              </FormControl>
+              <FormLabel>Primary Supplier</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a supplier" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {suppliersList.map((s: any) => (
+                    <SelectItem key={s._id} value={s._id}>
+                      {s.companyName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}

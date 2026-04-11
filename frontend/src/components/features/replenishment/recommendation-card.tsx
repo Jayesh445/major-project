@@ -1,19 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Check, X, TrendingUp } from "lucide-react"
-import { formatCurrency } from "@/lib/utils/format"
+import { Check, X, TrendingUp, ArrowRight } from "lucide-react"
 
 interface Recommendation {
   id: string
   productName: string
   sku: string
-  currentStock: number
   recommendedQty: number
   reason: string
-  supplierName: string
-  estimatedCost: number
-  confidence: number
+  fromWarehouse: string
+  toWarehouse: string
+  estimatedSaving: number
 }
 
 interface RecommendationCardProps {
@@ -21,6 +19,9 @@ interface RecommendationCardProps {
   onApprove: (id: string) => void
   onReject: (id: string) => void
 }
+
+const formatCurrency = (amount: number) =>
+  `₹${amount.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
 
 export function RecommendationCard({ recommendation, onApprove, onReject }: RecommendationCardProps) {
   return (
@@ -30,33 +31,27 @@ export function RecommendationCard({ recommendation, onApprove, onReject }: Reco
           <CardTitle className="text-base">{recommendation.productName}</CardTitle>
           <p className="text-sm text-muted-foreground">{recommendation.sku}</p>
         </div>
-        <Badge variant={recommendation.confidence > 80 ? "default" : "secondary"}>
-          {recommendation.confidence}% Confidence
-        </Badge>
+        <Badge variant="outline">{recommendation.recommendedQty} units</Badge>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-          <div>
-            <p className="text-muted-foreground">Current Stock</p>
-            <p className="font-medium">{recommendation.currentStock}</p>
+        <div className="space-y-3 text-sm mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Transfer:</span>
+            <span className="font-medium">{recommendation.fromWarehouse}</span>
+            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+            <span className="font-medium">{recommendation.toWarehouse}</span>
           </div>
-          <div>
-            <p className="text-muted-foreground">Recommended</p>
-            <p className="font-medium text-blue-600">{recommendation.recommendedQty}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Supplier</p>
-            <p className="font-medium">{recommendation.supplierName}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Est. Cost</p>
-            <p className="font-medium">{formatCurrency(recommendation.estimatedCost)}</p>
-          </div>
+          {recommendation.estimatedSaving > 0 && (
+            <div>
+              <span className="text-muted-foreground">Est. Saving: </span>
+              <span className="font-medium text-green-600">{formatCurrency(recommendation.estimatedSaving)}</span>
+            </div>
+          )}
         </div>
         <div className="bg-muted/50 p-3 rounded-md text-sm">
           <div className="flex items-center gap-2 mb-1 text-primary">
             <TrendingUp className="h-4 w-4" />
-            <span className="font-medium">AI Reason</span>
+            <span className="font-medium">AI Reasoning</span>
           </div>
           <p className="text-muted-foreground">{recommendation.reason}</p>
         </div>

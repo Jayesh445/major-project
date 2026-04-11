@@ -60,7 +60,7 @@ export const useSignup = () => {
       setTokens(data.accessToken, data.refreshToken);
       toast({
         title: 'Account created!',
-        description: 'Welcome to StationeryChain.',
+        description: 'Welcome to AutoStock AI.',
       });
       
       // Redirect based on role (same logic)

@@ -1,10 +1,23 @@
 import { QueryParams } from './index';
 
-export type POStatus = 'draft' | 'pending_approval' | 'approved' | 'sent' | 'received' | 'cancelled' | 'rejected';
+export type POStatus =
+  | 'draft'
+  | 'pending_approval'
+  | 'approved'
+  | 'sent_to_supplier'
+  | 'acknowledged'
+  | 'partially_received'
+  | 'fully_received'
+  | 'cancelled';
+
+export type TriggeredBy = 'auto_replenishment' | 'manual' | 'negotiation_agent';
 
 export interface POLineItem {
-  product: string; // Product ID
-  quantity: number;
+  _id?: string;
+  product: string | { _id: string; name: string; sku: string };
+  sku: string;
+  orderedQty: number;
+  receivedQty: number;
   unitPrice: number;
   totalPrice: number;
 }
@@ -12,14 +25,22 @@ export interface POLineItem {
 export interface PurchaseOrder {
   _id: string;
   poNumber: string;
-  supplier: string | any; // Supplier ID or object
-  warehouse: string | any;
-  items: POLineItem[];
-  status: POStatus;
+  supplier: string | { _id: string; companyName: string; contactEmail?: string };
+  warehouse: string | { _id: string; name: string; code: string };
+  lineItems: POLineItem[];
   totalAmount: number;
-  createdBy: string;
+  currency: string;
+  status: POStatus;
+  triggeredBy: TriggeredBy;
+  triggeredAt: string;
+  blockchainTxHash?: string;
+  blockchainLoggedAt?: string;
+  negotiationSession?: string;
+  createdBy?: string;
   approvedBy?: string;
+  approvedAt?: string;
   expectedDeliveryDate?: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,21 +48,19 @@ export interface PurchaseOrder {
 export interface CreatePODto {
   supplier: string;
   warehouse: string;
-  items: {
+  lineItems: {
     product: string;
-    quantity: number;
+    sku: string;
+    orderedQty: number;
     unitPrice: number;
   }[];
   expectedDeliveryDate?: string;
+  notes?: string;
 }
 
 export interface UpdatePODto {
   status?: POStatus;
-  items?: {
-    product: string;
-    quantity: number;
-    unitPrice: number;
-  }[];
+  notes?: string;
 }
 
 export interface POQueryParams extends QueryParams {

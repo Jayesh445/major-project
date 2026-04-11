@@ -9,17 +9,41 @@ import Inventory from '@/modules/inventory/model';
 import PurchaseOrder from '@/modules/purchase-order/model';
 import DemandForecast from '@/modules/forecast/model';
 import WarehouseOptimizationRecommendation from '@/modules/warehouse-optimization/model';
+import NegotiationSession from '@/modules/negotiation/model';
+import BlockchainLog from '@/modules/blockchain/model';
 
 /**
  * GET /api/dashboard/admin-stats
  * Returns aggregated counts for the admin dashboard.
  */
 export const getAdminStats = asyncHandler(async (_req: Request, res: Response) => {
-  const [totalUsers, totalProducts, totalWarehouses, activeSuppliers] = await Promise.all([
+  const [
+    totalUsers, totalProducts, totalWarehouses, activeSuppliers,
+    totalNegotiations, totalForecasts, totalBlockchainLogs,
+    recentPOs, recentNegotiations, recentForecasts,
+  ] = await Promise.all([
     User.countDocuments({ isActive: true }),
     Product.countDocuments({ isActive: true }),
     Warehouse.countDocuments({ isActive: true }),
-    Supplier.countDocuments({ status: 'active' }),
+    Supplier.countDocuments({ isApproved: true }),
+    NegotiationSession.countDocuments(),
+    DemandForecast.countDocuments(),
+    BlockchainLog.countDocuments(),
+    PurchaseOrder.find().sort({ createdAt: -1 }).limit(5)
+      .populate('supplier', 'companyName')
+      .populate('warehouse', 'name code')
+      .select('poNumber status totalAmount triggeredBy createdAt')
+      .lean(),
+    NegotiationSession.find().sort({ createdAt: -1 }).limit(5)
+      .populate('supplier', 'companyName')
+      .populate('product', 'name sku')
+      .select('status finalTerms rounds createdAt')
+      .lean(),
+    DemandForecast.find().sort({ forecastedAt: -1 }).limit(5)
+      .populate('product', 'name sku')
+      .populate('warehouse', 'name code')
+      .select('totalPredicted7Day modelVersion forecastedAt')
+      .lean(),
   ]);
 
   // Average warehouse utilisation
@@ -38,6 +62,37 @@ export const getAdminStats = asyncHandler(async (_req: Request, res: Response) =
       ? Math.round((warehouseAgg[0].usedCapacity / warehouseAgg[0].totalCapacity) * 100)
       : 0;
 
+  // Build recent activity from real events
+  const recentActivity: any[] = [];
+
+  for (const po of recentPOs) {
+    recentActivity.push({
+      type: 'purchase_order',
+      title: `PO ${(po as any).poNumber} — ${(po as any).supplier?.companyName || 'Supplier'}`,
+      description: `₹${((po as any).totalAmount || 0).toLocaleString('en-IN')} | ${(po as any).status}`,
+      timestamp: (po as any).createdAt,
+    });
+  }
+  for (const neg of recentNegotiations) {
+    recentActivity.push({
+      type: 'negotiation',
+      title: `Negotiation with ${(neg as any).supplier?.companyName || 'Supplier'}`,
+      description: `${(neg as any).rounds?.length || 0} rounds | ${(neg as any).status}${(neg as any).finalTerms ? ` | ₹${(neg as any).finalTerms.unitPrice}/unit` : ''}`,
+      timestamp: (neg as any).createdAt,
+    });
+  }
+  for (const fc of recentForecasts) {
+    recentActivity.push({
+      type: 'forecast',
+      title: `Forecast: ${(fc as any).product?.name || 'Product'} @ ${(fc as any).warehouse?.code || 'WH'}`,
+      description: `7-day predicted: ${(fc as any).totalPredicted7Day} units`,
+      timestamp: (fc as any).forecastedAt,
+    });
+  }
+
+  // Sort by timestamp, most recent first
+  recentActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
   return res.json(
     new ApiResponse(200, {
       totalUsers,
@@ -45,6 +100,10 @@ export const getAdminStats = asyncHandler(async (_req: Request, res: Response) =
       totalWarehouses,
       activeSuppliers,
       avgWarehouseUtilisation: utilisation,
+      totalNegotiations,
+      totalForecasts,
+      totalBlockchainLogs,
+      recentActivity: recentActivity.slice(0, 10),
     }, 'Admin stats fetched')
   );
 });
@@ -54,17 +113,20 @@ export const getAdminStats = asyncHandler(async (_req: Request, res: Response) =
  * Returns aggregated inventory and PO metrics for the warehouse dashboard.
  */
 export const getWarehouseStats = asyncHandler(async (_req: Request, res: Response) => {
-  const [stockAgg, lowStockCount, pendingReceivingCount] = await Promise.all([
-    // Total units across all inventory
+  const [stockAgg, lowStockCount, pendingReceivingCount, activeTransfers, recentOptimizations] = await Promise.all([
     Inventory.aggregate([
       { $group: { _id: null, total: { $sum: '$currentStock' } } },
     ]),
-    // Low-stock: items where currentStock <= reorderPoint
     Inventory.countDocuments({ $expr: { $lte: ['$currentStock', '$reorderPoint'] } }),
-    // POs waiting to be received (approved / sent / acknowledged)
     PurchaseOrder.countDocuments({
       status: { $in: ['approved', 'sent_to_supplier', 'acknowledged'] },
     }),
+    WarehouseOptimizationRecommendation.countDocuments({ status: 'accepted' }),
+    WarehouseOptimizationRecommendation.find()
+      .sort({ generatedAt: -1 })
+      .limit(5)
+      .select('generatedAt transferRecommendations reallocationSummary status predictedLogisticsCostReductionPercent')
+      .lean(),
   ]);
 
   const totalInventory = stockAgg.length ? stockAgg[0].total : 0;
@@ -74,6 +136,8 @@ export const getWarehouseStats = asyncHandler(async (_req: Request, res: Respons
       totalInventory,
       lowStockAlerts: lowStockCount,
       pendingReceiving: pendingReceivingCount,
+      activeTransfers,
+      recentOptimizations,
     }, 'Warehouse stats fetched')
   );
 });

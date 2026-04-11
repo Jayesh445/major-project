@@ -15,6 +15,10 @@ import dashboardRoutes from '@/modules/dashboard/dashboard.routes';
 import internalRoutes from '@/modules/internal/internal.routes';
 import { internalAuth } from '@/middlewares/internalAuth';
 import { ForecastScheduler } from '@/modules/forecast/services/scheduler.service';
+import agentRoutes from '@/modules/agents/agent.routes';
+import blockchainRoutes from '@/modules/blockchain/routes';
+import qrRoutes from '@/modules/qr/qr.routes';
+import { startConfirmationWorker, stopConfirmationWorker } from '@/modules/blockchain/worker';
 
 const app: Express = express();
 const PORT = parseInt(env.PORT, 10);
@@ -39,6 +43,9 @@ app.use('/api/v1/purchase-orders', purchaseOrderRoutes);
 app.use('/api/forecast', forecastRoutes);
 app.use('/api/warehouse-optimization', optimizationRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/agents', agentRoutes);
+app.use('/api/blockchain', blockchainRoutes);
+app.use('/api/qr', qrRoutes);
 app.use('/api/internal', internalAuth, internalRoutes);
 
 // Example route using utilities
@@ -70,6 +77,9 @@ const startServer = async () => {
 
     // Start forecast scheduler
     ForecastScheduler.start();
+
+    // Start blockchain confirmation worker
+    startConfirmationWorker();
   });
 };
 
@@ -82,12 +92,14 @@ startServer().catch((error) => {
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
   ForecastScheduler.stop();
+  stopConfirmationWorker();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('SIGINT signal received: closing HTTP server');
   ForecastScheduler.stop();
+  stopConfirmationWorker();
   process.exit(0);
 });
 

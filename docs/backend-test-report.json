@@ -1,0 +1,181 @@
+{
+  "timestamp": "2026-04-11T05:30:18.463Z",
+  "summary": {
+    "total": 28,
+    "pass": 28,
+    "fail": 0,
+    "successRate": 100,
+    "avgMs": 128,
+    "maxMs": 488
+  },
+  "results": [
+    {
+      "step": "GET /health",
+      "status": "PASS",
+      "detail": "2026-04-11T05:30:14.941Z",
+      "ms": 78
+    },
+    {
+      "step": "POST /users/login",
+      "status": "PASS",
+      "detail": "token=eyJhbGciOiJIUzI1...",
+      "ms": 320
+    },
+    {
+      "step": "GET /users/profile (authenticated)",
+      "status": "PASS",
+      "detail": "admin@autostock.ai",
+      "ms": 78
+    },
+    {
+      "step": "GET /users (list)",
+      "status": "PASS",
+      "detail": "0 users",
+      "ms": 91
+    },
+    {
+      "step": "POST /products (create)",
+      "status": "PASS",
+      "detail": "id=69d9dc67adbda9061214ec7a",
+      "ms": 138
+    },
+    {
+      "step": "GET /products (list)",
+      "status": "PASS",
+      "detail": "10 products",
+      "ms": 133
+    },
+    {
+      "step": "GET /products/:id (get by id)",
+      "status": "PASS",
+      "detail": "Test Pen",
+      "ms": 78
+    },
+    {
+      "step": "POST /warehouses (create)",
+      "status": "PASS",
+      "detail": "id=69d9dc67adbda9061214ec84",
+      "ms": 104
+    },
+    {
+      "step": "GET /warehouses (list)",
+      "status": "PASS",
+      "detail": "5 warehouses",
+      "ms": 114
+    },
+    {
+      "step": "POST /suppliers (create)",
+      "status": "PASS",
+      "detail": "id=69d9dc68adbda9061214ec8b",
+      "ms": 152
+    },
+    {
+      "step": "GET /suppliers (list)",
+      "status": "PASS",
+      "detail": "5 suppliers",
+      "ms": 88
+    },
+    {
+      "step": "GET /suppliers/:id",
+      "status": "PASS",
+      "detail": "Test Supplier 1775885416010",
+      "ms": 68
+    },
+    {
+      "step": "PUT /suppliers/:id (update)",
+      "status": "PASS",
+      "detail": "rating=5",
+      "ms": 92
+    },
+    {
+      "step": "GET /inventory (list)",
+      "status": "PASS",
+      "detail": "10 items",
+      "ms": 252
+    },
+    {
+      "step": "GET /purchase-orders (list)",
+      "status": "PASS",
+      "detail": "10 POs",
+      "ms": 91
+    },
+    {
+      "step": "GET /dashboard/admin-stats",
+      "status": "PASS",
+      "detail": "users=7, products=16, warehouses=5, recentActivity=10",
+      "ms": 488
+    },
+    {
+      "step": "GET /dashboard/warehouse-stats",
+      "status": "PASS",
+      "detail": "inv=1868, low=18, pending=5, transfers=2",
+      "ms": 51
+    },
+    {
+      "step": "GET /dashboard/procurement-stats",
+      "status": "PASS",
+      "detail": "spend=573576, pending=2, open=4",
+      "ms": 49
+    },
+    {
+      "step": "GET /dashboard/agent-stats",
+      "status": "PASS",
+      "detail": "forecasts=62, optimizations=7",
+      "ms": 96
+    },
+    {
+      "step": "GET /api/agents/status",
+      "status": "PASS",
+      "detail": "9 agents, 5 recent negotiations",
+      "ms": 111
+    },
+    {
+      "step": "GET /api/agents/negotiation/sessions",
+      "status": "PASS",
+      "detail": "16 sessions",
+      "ms": 113
+    },
+    {
+      "step": "GET /api/agents/blockchain/logs",
+      "status": "PASS",
+      "detail": "20 logs",
+      "ms": 46
+    },
+    {
+      "step": "GET /api/internal/warehouses (with internal key)",
+      "status": "PASS",
+      "detail": "5 warehouses",
+      "ms": 42
+    },
+    {
+      "step": "GET /api/internal/suppliers",
+      "status": "PASS",
+      "detail": "3 suppliers",
+      "ms": 77
+    },
+    {
+      "step": "GET /api/internal/inventory/all",
+      "status": "PASS",
+      "detail": "60 items",
+      "ms": 385
+    },
+    {
+      "step": "DELETE /suppliers/:id",
+      "status": "PASS",
+      "detail": "deleted",
+      "ms": 93
+    },
+    {
+      "step": "DELETE /products/:id",
+      "status": "PASS",
+      "detail": "deleted",
+      "ms": 76
+    },
+    {
+      "step": "DELETE /warehouses/:id",
+      "status": "PASS",
+      "detail": "deleted",
+      "ms": 80
+    }
+  ]
+}

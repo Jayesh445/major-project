@@ -2,7 +2,7 @@ import { ProductForm } from "@/components/features/products/product-form"
 import { PageHeader } from "@/components/business/page-header"
 
 export const metadata = {
-  title: "Add Product - StationeryChain",
+  title: "Add Product - AutoStock AI",
   description: "Add a new product to the catalog",
 }
 

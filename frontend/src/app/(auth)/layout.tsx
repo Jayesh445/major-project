@@ -7,7 +7,7 @@ export default function AuthLayout({
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">StationeryChain</h1>
+          <h1 className="text-2xl font-bold tracking-tight">AutoStock AI</h1>
           <p className="text-sm text-muted-foreground mt-2">
             Supply Chain Management System
           </p>

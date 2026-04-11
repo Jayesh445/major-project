@@ -3,7 +3,7 @@ import { LoginForm } from "@/components/features/auth/login-form"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const metadata = {
-  title: "Login - StationeryChain",
+  title: "Login - AutoStock AI",
   description: "Login to your account",
 }
 

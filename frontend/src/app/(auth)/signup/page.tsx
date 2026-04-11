@@ -3,7 +3,7 @@ import { SignupForm } from "@/components/features/auth/signup-form"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const metadata = {
-  title: "Sign Up - StationeryChain",
+  title: "Sign Up - AutoStock AI",
   description: "Create a new account",
 }
 

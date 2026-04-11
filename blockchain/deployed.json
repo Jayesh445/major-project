@@ -1,0 +1,387 @@
+{
+  "contractName": "SupplyChainAudit",
+  "address": "0x99A725B015480B004DC3DFC8F1be6482b01932A8",
+  "chainId": 11155111,
+  "networkName": "sepolia",
+  "deployedAt": "2026-04-11T08:37:02.869Z",
+  "deployerAddress": "0x37b550f7685C0dDecF1028c7D15C37dafa0b63b3",
+  "txHash": "0x35875d9e3ed74c2ad38144080d6647a80e02a06636b1f39a2a673e0551e08a02",
+  "blockNumber": 10635941,
+  "gasUsed": "991265",
+  "abi": [
+    {
+      "type": "constructor",
+      "stateMutability": "undefined",
+      "payable": false,
+      "inputs": []
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "AuditLogged",
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "referenceId",
+          "indexed": true
+        },
+        {
+          "type": "uint8",
+          "name": "eventType",
+          "indexed": true
+        },
+        {
+          "type": "bytes32",
+          "name": "documentHash",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "amount",
+          "indexed": false
+        },
+        {
+          "type": "uint256",
+          "name": "timestamp",
+          "indexed": false
+        },
+        {
+          "type": "address",
+          "name": "submittedBy",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "OwnerChanged",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "previousOwner",
+          "indexed": true
+        },
+        {
+          "type": "address",
+          "name": "newOwner",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "SubmitterAdded",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "submitter",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "event",
+      "anonymous": false,
+      "name": "SubmitterRemoved",
+      "inputs": [
+        {
+          "type": "address",
+          "name": "submitter",
+          "indexed": true
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "addSubmitter",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "who"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "approvedSubmitters",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getEntries",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "referenceId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple[]",
+          "name": "",
+          "components": [
+            {
+              "type": "bytes32",
+              "name": "referenceId"
+            },
+            {
+              "type": "uint8",
+              "name": "eventType"
+            },
+            {
+              "type": "bytes32",
+              "name": "documentHash"
+            },
+            {
+              "type": "uint256",
+              "name": "amount"
+            },
+            {
+              "type": "uint256",
+              "name": "timestamp"
+            },
+            {
+              "type": "address",
+              "name": "submittedBy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getEntry",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "referenceId"
+        },
+        {
+          "type": "uint256",
+          "name": "index"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "tuple",
+          "name": "",
+          "components": [
+            {
+              "type": "bytes32",
+              "name": "referenceId"
+            },
+            {
+              "type": "uint8",
+              "name": "eventType"
+            },
+            {
+              "type": "bytes32",
+              "name": "documentHash"
+            },
+            {
+              "type": "uint256",
+              "name": "amount"
+            },
+            {
+              "type": "uint256",
+              "name": "timestamp"
+            },
+            {
+              "type": "address",
+              "name": "submittedBy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "getEntryCount",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "referenceId"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "latestHashByRef",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": ""
+        },
+        {
+          "type": "uint8",
+          "name": ""
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bytes32",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "logEvent",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "referenceId"
+        },
+        {
+          "type": "uint8",
+          "name": "eventType"
+        },
+        {
+          "type": "bytes32",
+          "name": "documentHash"
+        },
+        {
+          "type": "uint256",
+          "name": "amount"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "uint256",
+          "name": "entryIndex"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "logEventsBatch",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32[]",
+          "name": "referenceIds"
+        },
+        {
+          "type": "uint8[]",
+          "name": "eventTypes"
+        },
+        {
+          "type": "bytes32[]",
+          "name": "documentHashes"
+        },
+        {
+          "type": "uint256[]",
+          "name": "amounts"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "owner",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "type": "address",
+          "name": ""
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "removeSubmitter",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "who"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "transferOwnership",
+      "constant": false,
+      "payable": false,
+      "inputs": [
+        {
+          "type": "address",
+          "name": "newOwner"
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "type": "function",
+      "name": "verifyHash",
+      "constant": true,
+      "stateMutability": "view",
+      "payable": false,
+      "inputs": [
+        {
+          "type": "bytes32",
+          "name": "referenceId"
+        },
+        {
+          "type": "uint8",
+          "name": "eventType"
+        },
+        {
+          "type": "bytes32",
+          "name": "documentHash"
+        }
+      ],
+      "outputs": [
+        {
+          "type": "bool",
+          "name": ""
+        }
+      ]
+    }
+  ]
+}

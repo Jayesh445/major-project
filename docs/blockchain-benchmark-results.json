@@ -1,0 +1,84 @@
+{
+  "timestamp": "2026-04-11T05:30:34.220Z",
+  "logEvent": {
+    "count": 20,
+    "successful": 20,
+    "elapsedMs": 1083,
+    "latencies": [
+      57,
+      63,
+      59,
+      54,
+      40,
+      60,
+      45,
+      57,
+      60,
+      62,
+      59,
+      55,
+      45,
+      55,
+      45,
+      61,
+      66,
+      49,
+      39,
+      50
+    ],
+    "txHashes": [
+      "0x3cb3c0d79eb42df63ac4e2e39c5ffd92be5d105d6caf284d58568be00d586893",
+      "0x63b4750b612f3278d71e489c9458398f97761384a9be243cef21883f1847f47e",
+      "0xee7bea86b778abfcbaff5147add7f5931e9912468074f34854db1e8ce17e4eb2",
+      "0xf76c5c5937d0a1f1969c99c600f4e0e212d116e25f4757fb7c4849ebec888777",
+      "0x2dc803bc7456387d6d3ca6f48d5645eac1124f7f3fbf224f618223a060e47748",
+      "0x6a1906c022ba88466eb3b736ad717dfcab7eaddffb178b7e2c28d4084482700e",
+      "0xa43f650213d1daef6fd0cb03ae47730cd9e3ee33ccdebd025e906c82f6d82bfc",
+      "0xc39a2e1823ae0f73f0e11a7a01b23985340695a5dae78c40ce26e69549cdc370",
+      "0x6f4d405e50fbc892741cef71d3dfff931f8b3470766865e3ed0b5e342cfd68fd",
+      "0xfe06f3febc386301cd14fcfd4af098a2b78ac0af182415ff90e8c540def74fea",
+      "0x765b8baf22a90d869746a8c05ece83d69186013f9ab0cf46da5af13be94a947c",
+      "0xfa7fb6a6d3ae55d0be5fe649aae6a4e369192540ffc504f6c2f5d53ee3bd5034",
+      "0xe3c35fd7a87578c447b718aca196ecafbc370a7e20d38a675fdda65523338084",
+      "0xe9acf968f0697f7d23e2d3654e21ebca7525886cbe721f0adf6ad6a50044db78",
+      "0x6408dafbbfe7f5247a735befff0e93b94a6a61a854290373ea6d9c05fad5ce4c",
+      "0x5f48d7cbb69af9e98d28b55347828cbd22e74d8bb87a1df08435b72f4e38e9cb",
+      "0x78b4815f6993aee0a2cd097892ed4071e3f949948de253e4634a6ba1e0d44cf1",
+      "0xf43694bf8a598b53138d3ece245fc415d435b36f6dd054809a2f94715aaba3ed",
+      "0xd20a9a130a624679d7f960eb7d5674568b641d0b73e35371e8248d3f1e91fdb6",
+      "0xfa83218e51801e6e1cd8588f21364c26487b15bc6f1e16e2d6f79b66c9136231"
+    ],
+    "p50": 55,
+    "p95": 63,
+    "p99": 66,
+    "mean": 54,
+    "min": 39,
+    "max": 66
+  },
+  "confirmation": {
+    "rate": 100,
+    "confirmed": 20,
+    "totalSubmitted": 20
+  },
+  "verification": {
+    "latency": 131,
+    "match": true,
+    "hasChainHash": true
+  },
+  "tamperDetection": {
+    "originalHash": "0x86d994b08486410e1b2dde5017d7fb52d928dd3327f89c4a6cfe906ca4351391",
+    "tamperedHash": "0xcb42c1f48109afc6502697aae9b7e80bd18b1465d695feb354defd0dfc166314",
+    "detected": true,
+    "detectionRate": 100
+  },
+  "paperTable55": {
+    "writeLatencyMs": 54,
+    "writeLatencyP95": 63,
+    "confirmationRate": 100,
+    "verifyLatencyMs": 131,
+    "tamperDetectionRate": 100,
+    "hashIntegrity": 100,
+    "eventsLogged": 20,
+    "estimatedCostUsd": 0.0003
+  }
+}

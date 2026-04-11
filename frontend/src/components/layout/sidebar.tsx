@@ -18,6 +18,8 @@ import {
   Menu,
   Bot,
   RefreshCw,
+  Handshake,
+  Cpu,
 } from "lucide-react"
 import {
   Sheet,
@@ -75,6 +77,16 @@ const adminRoutes = [
     icon: BarChart,
   },
   {
+    title: "Agent Hub",
+    href: "/dashboard/dev-tools/agent-hub",
+    icon: Cpu,
+  },
+  {
+    title: "Negotiations",
+    href: "/dashboard/dev-tools/negotiations",
+    icon: Handshake,
+  },
+  {
     title: "Agent Monitor",
     href: "/dashboard/dev-tools/agent-monitor",
     icon: Bot,
@@ -108,6 +120,11 @@ const warehouseRoutes = [
     icon: RefreshCw,
   },
   {
+    title: "Agent Hub",
+    href: "/dashboard/dev-tools/agent-hub",
+    icon: Cpu,
+  },
+  {
     title: "Agent Monitor",
     href: "/dashboard/dev-tools/agent-monitor",
     icon: Bot,
@@ -131,9 +148,19 @@ const procurementRoutes = [
     icon: RefreshCw,
   },
   {
+    title: "Negotiations",
+    href: "/dashboard/dev-tools/negotiations",
+    icon: Handshake,
+  },
+  {
     title: "Cost Analysis",
     href: "/dashboard/procurement/costs",
     icon: BarChart,
+  },
+  {
+    title: "Agent Hub",
+    href: "/dashboard/dev-tools/agent-hub",
+    icon: Cpu,
   },
   {
     title: "Agent Monitor",
@@ -179,7 +206,7 @@ export function Sidebar({ className, role = "admin" }: SidebarProps) {
   const SidebarContent = () => (
     <div className="flex h-full flex-col gap-4">
       <div className="flex h-14 items-center border-b px-6 font-bold text-xl">
-        StationeryChain
+        AutoStock AI
       </div>
       <div className="flex-1 overflow-auto py-2">
         <nav className="grid items-start px-4 text-sm font-medium">

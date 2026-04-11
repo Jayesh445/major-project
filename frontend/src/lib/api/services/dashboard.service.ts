@@ -1,17 +1,30 @@
 import apiClient from '../client';
 
+export interface RecentActivity {
+  type: 'purchase_order' | 'negotiation' | 'forecast';
+  title: string;
+  description: string;
+  timestamp: string;
+}
+
 export interface AdminStats {
   totalUsers: number;
   totalProducts: number;
   totalWarehouses: number;
   activeSuppliers: number;
   avgWarehouseUtilisation: number;
+  totalNegotiations: number;
+  totalForecasts: number;
+  totalBlockchainLogs: number;
+  recentActivity: RecentActivity[];
 }
 
 export interface WarehouseStats {
   totalInventory: number;
   lowStockAlerts: number;
   pendingReceiving: number;
+  activeTransfers: number;
+  recentOptimizations: any[];
 }
 
 export interface ProcurementStats {
