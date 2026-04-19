@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/business/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import apiClient from "@/lib/api/client"
+import { blockchainService } from "@/lib/api/services/blockchain.service"
 import { Loader2, ShieldCheck, TrendingUp, AlertCircle, CheckCircle, Clock, Eye } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -27,6 +27,11 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleString()
 }
 
+function formatEventType(eventType: string): string {
+  // Convert lowercase underscore format to uppercase underscore format
+  return eventType.toUpperCase()
+}
+
 export default function BlockchainMonitorPage() {
   const [stats, setStats] = useState<BlockchainStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -35,8 +40,8 @@ export default function BlockchainMonitorPage() {
     const fetchStats = async () => {
       try {
         setIsLoading(true)
-        const response = await apiClient.get("/blockchain/status")
-        setStats(response.data.data)
+        const data = await blockchainService.getStatus()
+        setStats(data)
       } catch (error) {
         console.error("Failed to fetch blockchain stats:", error)
         toast.error("Failed to load blockchain statistics")
@@ -204,12 +209,18 @@ export default function BlockchainMonitorPage() {
                     >
                       <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-semibold text-sm">
                               {tx.poNumber}
                             </span>
                             <Badge variant="outline" className="text-xs">
-                              {tx.eventType?.replace(/_/g, " ")}
+                              {formatEventType(tx.eventType).replace(/_/g, " ")}
+                            </Badge>
+                            <Badge
+                              variant={tx.status === "confirmed" ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {tx.status === "confirmed" ? "✓ Confirmed" : "⏳ Pending"}
                             </Badge>
                           </div>
                           <p className="text-xs text-muted-foreground">

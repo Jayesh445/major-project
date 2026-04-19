@@ -7,6 +7,7 @@ import {
   getLogsByReferenceHandler,
   getLatestLogs,
   handleWebhook,
+  getBlockchainStatus,
 } from './controller';
 
 const router = Router();
@@ -22,6 +23,7 @@ router.post('/webhook', handleWebhook);
 router.post('/log', internalAuth, createLog);
 
 // Authenticated endpoints for dashboards
+router.get('/status', authenticate, getBlockchainStatus);
 router.get('/logs/:referenceId', authenticate, getLogsByReferenceHandler);
 router.get('/logs', authenticate, getLatestLogs);
 

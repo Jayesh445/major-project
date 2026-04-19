@@ -128,26 +128,31 @@ export interface LogEventResult {
  * The background worker will update confirmationStatus when the tx is mined.
  */
 export async function logEventOnChain(params: LogEventParams): Promise<LogEventResult> {
+  const mongoose = require('mongoose');
   const documentHash = computeDocumentHash(params.payload);
   const eventTypeUint = EVENT_TYPE_ENUM[params.eventType];
   if (eventTypeUint === undefined) throw new Error(`Unknown eventType: ${params.eventType}`);
 
+  // Convert string IDs to ObjectIds
+  const referenceIdObj = new mongoose.Types.ObjectId(params.referenceId);
+  const triggeredByObj = params.triggeredBy ? new mongoose.Types.ObjectId(params.triggeredBy) : undefined;
+
   if (!isBlockchainEnabled()) {
     // Fallback: write to MongoDB as "confirmed" without real chain call
     const fakeHash = `0x${createHash('sha256')
-      .update(documentHash + Date.now().toString())
+      .update(documentHash + Date.now().toString() + Math.random())
       .digest('hex')}`;
 
     const doc = await BlockchainLog.create({
       eventType: params.eventType,
       referenceModel: params.referenceModel,
-      referenceId: params.referenceId,
+      referenceId: referenceIdObj,
       payload: params.payload,
       txHash: fakeHash,
       networkName: 'offline-fallback',
       confirmationStatus: 'confirmed',
       confirmedAt: new Date(),
-      triggeredBy: params.triggeredBy,
+      triggeredBy: triggeredByObj,
     });
 
     return {
@@ -170,12 +175,12 @@ export async function logEventOnChain(params: LogEventParams): Promise<LogEventR
   const doc = await BlockchainLog.create({
     eventType: params.eventType,
     referenceModel: params.referenceModel,
-    referenceId: params.referenceId,
+    referenceId: referenceIdObj,
     payload: params.payload,
     txHash: tx.hash,
     networkName: NETWORK_NAME,
     confirmationStatus: 'pending',
-    triggeredBy: params.triggeredBy,
+    triggeredBy: triggeredByObj,
   });
 
   return {
@@ -312,4 +317,47 @@ export async function updateLogStatus(
  */
 export async function getLogsByReference(referenceId: string) {
   return BlockchainLog.find({ referenceId }).sort({ createdAt: -1 }).lean();
+}
+
+
+/**
+ * Log an event to MongoDB only (no blockchain transaction).
+ * Used for intermediate workflow steps that don't need on-chain verification.
+ */
+export async function logEventLocalOnly(params: {
+  eventType: string;
+  referenceModel: string;
+  referenceId: string;
+  payload: any;
+  triggeredBy?: string;
+}): Promise<any> {
+  const mongoose = require('mongoose');
+  const documentHash = computeDocumentHash(params.payload);
+  const fakeHash = `0x${createHash('sha256')
+    .update(documentHash + Date.now().toString() + Math.random())
+    .digest('hex')}`;
+
+  // Convert referenceId string to ObjectId
+  const referenceIdObj = new mongoose.Types.ObjectId(params.referenceId);
+  const triggeredByObj = params.triggeredBy ? new mongoose.Types.ObjectId(params.triggeredBy) : undefined;
+
+  const doc = await BlockchainLog.create({
+    eventType: params.eventType,
+    referenceModel: params.referenceModel,
+    referenceId: referenceIdObj,
+    payload: params.payload,
+    txHash: fakeHash,
+    networkName: 'local-only',
+    confirmationStatus: 'confirmed',
+    confirmedAt: new Date(),
+    triggeredBy: triggeredByObj,
+  });
+
+  return {
+    _id: doc._id.toString(),
+    txHash: fakeHash,
+    documentHash,
+    confirmationStatus: 'confirmed',
+    etherscanUrl: null,
+  };
 }

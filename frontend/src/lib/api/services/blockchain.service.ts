@@ -1,122 +1,101 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth-store';
 
-// Blockchain routes live at /api/blockchain (not /api/v1)
-const bcClient = axios.create({
-  baseURL: `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '')}/api/blockchain`,
+// Create a separate client for blockchain endpoints (uses /api/blockchain without /v1)
+const blockchainClient = axios.create({
+  baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000').replace('/api/v1', '') + '/api/blockchain',
   timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-bcClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+// Add auth token to blockchain requests
+blockchainClient.interceptors.request.use(
+  (config) => {
+    const token = useAuthStore.getState().accessToken;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-// Public client for the verify page (no auth)
-const publicBcClient = axios.create({
-  baseURL: `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '')}/api/blockchain`,
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-});
-
-const qrClient = axios.create({
-  baseURL: `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1').replace('/api/v1', '')}/api/qr`,
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-});
-
-qrClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-export interface VerifyResult {
-  match: boolean;
-  computedHash: string;
-  chainHash: string | null;
-  blockNumber: number | null;
-  txHash: string | null;
-  etherscanUrl: string | null;
-  referenceId: string;
-  eventType: string;
-  documentName: string;
-  amount?: number;
-  payload?: any;
-}
-
-export interface BlockchainLogEntry {
-  _id: string;
-  eventType: string;
-  referenceModel: string;
-  referenceId: string;
-  payload: any;
-  txHash: string;
-  blockNumber?: number;
-  networkName: string;
-  confirmationStatus: 'pending' | 'confirmed' | 'failed';
-  confirmedAt?: string;
-  createdAt: string;
-  etherscanUrl?: string;
-}
-
-export interface QRResult {
-  qrDataUrl: string;
-  verifyUrl: string;
-  referenceId: string;
-}
-
-// ── Service ──────────────────────────────────────────────────────────────────
+// Handle 401 errors
+blockchainClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const blockchainService = {
-  // Public verification (no auth — for QR scans)
-  verifyByReference: async (referenceId: string, eventType = 'po_created'): Promise<VerifyResult> => {
-    const res = await publicBcClient.get(`/verify/${referenceId}?eventType=${eventType}&includePayload=true`);
-    return res.data.data;
+  // Get blockchain status (overall statistics)
+  getStatus: async () => {
+    const response = await blockchainClient.get('/status');
+    return response.data.data;
   },
 
-  getLogsByReference: async (referenceId: string): Promise<BlockchainLogEntry[]> => {
-    const res = await bcClient.get(`/logs/${referenceId}`);
-    return res.data.data;
+  // Get all blockchain logs (paginated)
+  getLogs: async (limit = 50) => {
+    const response = await blockchainClient.get('/logs', { params: { limit } });
+    return response.data.data;
   },
 
+  // Get logs for a specific PO
+  getLogsByPO: async (purchaseOrderId: string) => {
+    const response = await blockchainClient.get('/logs', {
+      params: { purchaseOrderId },
+    });
+    return response.data.data;
+  },
+
+  // Get logs for a reference (used by verify page)
+  getLogsByReference: async (referenceId: string) => {
+    const response = await blockchainClient.get(`/logs/${referenceId}`);
+    return response.data.data || [];
+  },
+
+  // Verify a document's blockchain hash
+  verify: async (referenceId: string, eventType = 'po_created') => {
+    const response = await blockchainClient.get(`/verify/${referenceId}`, {
+      params: { eventType },
+    });
+    return response.data.data;
+  },
+
+  // Verify by reference (alias for verify, used by verify page)
+  verifyByReference: async (referenceId: string, eventType = 'po_created') => {
+    const response = await blockchainClient.get(`/verify/${referenceId}`, {
+      params: { eventType },
+    });
+    return response.data.data;
+  },
+
+  // Get QR code for PO (if needed)
+  getQRForPO: async (poId: string, eventType = 'po_created') => {
+    // Return the QR code URL
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return {
+      qrUrl: `${baseUrl}/verify/${poId}?type=${eventType}`,
+      poId,
+      eventType,
+    };
+  },
+
+  // Get latest logs with filters
   getLatestLogs: async (filters?: {
     eventType?: string;
     referenceModel?: string;
     status?: string;
     limit?: number;
-  }): Promise<BlockchainLogEntry[]> => {
-    const params = new URLSearchParams();
-    if (filters?.eventType) params.set('eventType', filters.eventType);
-    if (filters?.referenceModel) params.set('referenceModel', filters.referenceModel);
-    if (filters?.status) params.set('status', filters.status);
-    if (filters?.limit) params.set('limit', String(filters.limit));
-    const res = await bcClient.get(`/logs?${params.toString()}`);
-    return res.data.data;
-  },
-
-  getQRForPO: async (poId: string, eventType = 'po_created'): Promise<QRResult> => {
-    const res = await qrClient.get(`/po/${poId}?type=${eventType}`);
-    return res.data.data;
-  },
-
-  getPendingTransactions: async (): Promise<BlockchainLogEntry[]> => {
-    const res = await bcClient.get('/logs?confirmationStatus=pending&limit=50');
-    return res.data.data || [];
-  },
-
-  getTransactionStatus: async (txHash: string): Promise<BlockchainLogEntry> => {
-    const res = await bcClient.get(`/logs/tx/${txHash}`);
-    return res.data.data;
-  },
-
-  getTransactionWithLogs: async (referenceId: string): Promise<BlockchainLogEntry | null> => {
-    const res = await bcClient.get(`/logs/${referenceId}?sort=createdAt&limit=1`);
-    const logs = res.data.data as BlockchainLogEntry[];
-    return logs && logs.length > 0 ? logs[0] : null;
+  }) => {
+    const response = await blockchainClient.get('/logs', { params: filters });
+    return response.data.data || [];
   },
 };

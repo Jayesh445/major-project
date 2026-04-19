@@ -293,8 +293,39 @@ export class PurchaseOrderService {
     po.status = 'pending_approval';
     await po.save();
 
+    // Log blockchain event asynchronously (don't block workflow)
+    try {
+      const payload = {
+        poNumber: po.poNumber,
+        supplier: po.supplier?.toString(),
+        warehouse: po.warehouse?.toString(),
+        lineItems: po.lineItems?.map((li: any) => ({
+          sku: li.sku,
+          orderedQty: li.orderedQty,
+          unitPrice: li.unitPrice,
+          totalPrice: li.totalPrice,
+        })),
+        totalAmount: po.totalAmount,
+        currency: po.currency,
+        status: po.status,
+      };
+
+      await logEventOnChain({
+        eventType: 'po_submitted_for_approval',
+        referenceModel: 'PurchaseOrder',
+        referenceId: po._id.toString(),
+        payload,
+        amount: po.totalAmount,
+        triggeredBy: undefined,
+      });
+
+      console.log(`[Blockchain] po_submitted_for_approval logged for PO ${po.poNumber}`);
+    } catch (err) {
+      console.error(`[Blockchain] Failed to log po_submitted_for_approval for PO ${po.poNumber}:`, err);
+      // Don't throw — workflow already succeeded
+    }
+
     // TODO: Create notification for approvers
-    // TODO: Log blockchain event
 
     return po.populate('supplier warehouse');
   }
@@ -323,8 +354,41 @@ export class PurchaseOrderService {
 
     await po.save();
 
+    // Log blockchain event asynchronously (don't block workflow)
+    try {
+      const payload = {
+        poNumber: po.poNumber,
+        supplier: po.supplier?.toString(),
+        warehouse: po.warehouse?.toString(),
+        lineItems: po.lineItems?.map((li: any) => ({
+          sku: li.sku,
+          orderedQty: li.orderedQty,
+          unitPrice: li.unitPrice,
+          totalPrice: li.totalPrice,
+        })),
+        totalAmount: po.totalAmount,
+        currency: po.currency,
+        status: po.status,
+        approvedBy: userId,
+        approvedAt: po.approvedAt,
+      };
+
+      await logEventOnChain({
+        eventType: 'po_approved',
+        referenceModel: 'PurchaseOrder',
+        referenceId: po._id.toString(),
+        payload,
+        amount: po.totalAmount,
+        triggeredBy: userId,
+      });
+
+      console.log(`[Blockchain] po_approved logged for PO ${po.poNumber}`);
+    } catch (err) {
+      console.error(`[Blockchain] Failed to log po_approved for PO ${po.poNumber}:`, err);
+      // Don't throw — workflow already succeeded
+    }
+
     // TODO: Create notification for supplier
-    // TODO: Log blockchain event (po_approved)
 
     return po.populate('supplier warehouse approvedBy');
   }
@@ -348,6 +412,31 @@ export class PurchaseOrderService {
 
     await po.save();
 
+    // Log blockchain event asynchronously (don't block workflow)
+    try {
+      const payload = {
+        poNumber: po.poNumber,
+        supplier: po.supplier?.toString(),
+        warehouse: po.warehouse?.toString(),
+        reason,
+        status: po.status,
+      };
+
+      await logEventOnChain({
+        eventType: 'po_cancelled',
+        referenceModel: 'PurchaseOrder',
+        referenceId: po._id.toString(),
+        payload,
+        amount: 0,
+        triggeredBy: undefined,
+      });
+
+      console.log(`[Blockchain] po_cancelled logged for PO ${po.poNumber}`);
+    } catch (err) {
+      console.error(`[Blockchain] Failed to log po_cancelled for PO ${po.poNumber}:`, err);
+      // Don't throw — workflow already succeeded
+    }
+
     // TODO: Create notification for creator
 
     return po.populate('supplier warehouse');
@@ -370,9 +459,40 @@ export class PurchaseOrderService {
     po.status = 'sent_to_supplier';
     await po.save();
 
+    // Log blockchain event asynchronously (don't block workflow)
+    try {
+      const payload = {
+        poNumber: po.poNumber,
+        supplier: po.supplier?.toString(),
+        warehouse: po.warehouse?.toString(),
+        lineItems: po.lineItems?.map((li: any) => ({
+          sku: li.sku,
+          orderedQty: li.orderedQty,
+          unitPrice: li.unitPrice,
+          totalPrice: li.totalPrice,
+        })),
+        totalAmount: po.totalAmount,
+        currency: po.currency,
+        status: po.status,
+      };
+
+      await logEventOnChain({
+        eventType: 'po_sent_to_supplier',
+        referenceModel: 'PurchaseOrder',
+        referenceId: po._id.toString(),
+        payload,
+        amount: po.totalAmount,
+        triggeredBy: undefined,
+      });
+
+      console.log(`[Blockchain] po_sent_to_supplier logged for PO ${po.poNumber}`);
+    } catch (err) {
+      console.error(`[Blockchain] Failed to log po_sent_to_supplier for PO ${po.poNumber}:`, err);
+      // Don't throw — workflow already succeeded
+    }
+
     // TODO: Send email to supplier
     // TODO: Create notification
-    // TODO: Log blockchain event (po_sent)
 
     return po.populate('supplier warehouse');
   }
@@ -394,8 +514,39 @@ export class PurchaseOrderService {
     po.status = 'acknowledged';
     await po.save();
 
+    // Log blockchain event asynchronously (don't block workflow)
+    try {
+      const payload = {
+        poNumber: po.poNumber,
+        supplier: po.supplier?.toString(),
+        warehouse: po.warehouse?.toString(),
+        lineItems: po.lineItems?.map((li: any) => ({
+          sku: li.sku,
+          orderedQty: li.orderedQty,
+          unitPrice: li.unitPrice,
+          totalPrice: li.totalPrice,
+        })),
+        totalAmount: po.totalAmount,
+        currency: po.currency,
+        status: po.status,
+      };
+
+      await logEventOnChain({
+        eventType: 'po_acknowledged',
+        referenceModel: 'PurchaseOrder',
+        referenceId: po._id.toString(),
+        payload,
+        amount: po.totalAmount,
+        triggeredBy: undefined,
+      });
+
+      console.log(`[Blockchain] po_acknowledged logged for PO ${po.poNumber}`);
+    } catch (err) {
+      console.error(`[Blockchain] Failed to log po_acknowledged for PO ${po.poNumber}:`, err);
+      // Don't throw — workflow already succeeded
+    }
+
     // TODO: Create notification for warehouse and procurement
-    // TODO: Log blockchain event
 
     return po.populate('supplier warehouse');
   }
@@ -456,8 +607,43 @@ export class PurchaseOrderService {
 
     await po.save();
 
+    // Log blockchain event asynchronously (don't block workflow)
+    try {
+      const payload = {
+        poNumber: po.poNumber,
+        supplier: po.supplier?.toString(),
+        warehouse: po.warehouse?.toString(),
+        lineItems: po.lineItems?.map((li: any) => ({
+          sku: li.sku,
+          orderedQty: li.orderedQty,
+          receivedQty: li.receivedQty,
+          unitPrice: li.unitPrice,
+          totalPrice: li.totalPrice,
+        })),
+        totalAmount: po.totalAmount,
+        currency: po.currency,
+        status: po.status,
+        receivedBy: userId,
+      };
+
+      const eventType = allFullyReceived ? 'po_received' : 'po_acknowledged';
+      
+      await logEventOnChain({
+        eventType: eventType as any,
+        referenceModel: 'PurchaseOrder',
+        referenceId: po._id.toString(),
+        payload,
+        amount: po.totalAmount,
+        triggeredBy: userId,
+      });
+
+      console.log(`[Blockchain] ${eventType} logged for PO ${po.poNumber}`);
+    } catch (err) {
+      console.error(`[Blockchain] Failed to log receipt event for PO ${po.poNumber}:`, err);
+      // Don't throw — workflow already succeeded
+    }
+
     // TODO: Create notification
-    // TODO: Log blockchain event (po_received)
 
     return po.populate('supplier warehouse lineItems.product');
   }
@@ -481,8 +667,32 @@ export class PurchaseOrderService {
 
     await po.save();
 
+    // Log blockchain event asynchronously (don't block workflow)
+    try {
+      const payload = {
+        poNumber: po.poNumber,
+        supplier: po.supplier?.toString(),
+        warehouse: po.warehouse?.toString(),
+        reason: dto.reason,
+        status: po.status,
+      };
+
+      await logEventOnChain({
+        eventType: 'po_cancelled',
+        referenceModel: 'PurchaseOrder',
+        referenceId: po._id.toString(),
+        payload,
+        amount: 0,
+        triggeredBy: undefined,
+      });
+
+      console.log(`[Blockchain] po_cancelled logged for PO ${po.poNumber}`);
+    } catch (err) {
+      console.error(`[Blockchain] Failed to log po_cancelled for PO ${po.poNumber}:`, err);
+      // Don't throw — workflow already succeeded
+    }
+
     // TODO: Create notification for supplier
-    // TODO: Log blockchain event
 
     return po.populate('supplier warehouse');
   }

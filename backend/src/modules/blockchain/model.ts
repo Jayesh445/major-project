@@ -5,9 +5,14 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
  */
 export type EventType =
   | 'po_created'
+  | 'po_submitted_for_approval'
   | 'po_approved'
   | 'po_sent'
+  | 'po_sent_to_supplier'
   | 'po_received'
+  | 'po_acknowledged'
+  | 'goods_received'
+  | 'po_cancelled'
   | 'negotiation_accepted'
   | 'negotiation_rejected'
   | 'inventory_adjustment'
@@ -53,9 +58,14 @@ const BlockchainLogSchema = new Schema<IBlockchainLog>(
       enum: {
         values: [
           'po_created',
+          'po_submitted_for_approval',
           'po_approved',
           'po_sent',
+          'po_sent_to_supplier',
           'po_received',
+          'po_acknowledged',
+          'goods_received',
+          'po_cancelled',
           'negotiation_accepted',
           'negotiation_rejected',
           'inventory_adjustment',

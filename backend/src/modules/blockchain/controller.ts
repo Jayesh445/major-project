@@ -145,14 +145,16 @@ export const getLogsByReferenceHandler = asyncHandler(async (req: Request, res: 
 /**
  * GET /api/blockchain/logs
  * Paginated list of all blockchain logs (for admin / audit trail view).
+ * Supports filtering by purchaseOrderId, eventType, referenceModel, and status.
  */
 export const getLatestLogs = asyncHandler(async (req: Request, res: Response) => {
-  const { limit = 50, eventType, referenceModel, status } = req.query;
+  const { limit = 50, eventType, referenceModel, status, purchaseOrderId } = req.query;
 
   const filter: any = {};
   if (eventType) filter.eventType = eventType;
   if (referenceModel) filter.referenceModel = referenceModel;
   if (status) filter.confirmationStatus = status;
+  if (purchaseOrderId) filter.referenceId = purchaseOrderId;
 
   const BlockchainLog = (await import('./model')).default;
   const logs = await BlockchainLog.find(filter)
@@ -166,6 +168,51 @@ export const getLatestLogs = asyncHandler(async (req: Request, res: Response) =>
   }));
 
   return sendSuccess(res, enriched);
+});
+
+/**
+ * GET /api/blockchain/status
+ * Returns overall blockchain logging statistics and health metrics.
+ */
+export const getBlockchainStatus = asyncHandler(async (req: Request, res: Response) => {
+  const BlockchainLog = (await import('./model')).default;
+
+  // Get total POs count
+  const totalPOs = await PurchaseOrder.countDocuments();
+
+  // Get count of POs logged on chain
+  const loggedOnChain = await PurchaseOrder.countDocuments({ blockchainTxHash: { $exists: true } });
+
+  // Get count of POs with pending blockchain logging (has tx hash but not confirmed)
+  const pendingLogging = await PurchaseOrder.countDocuments({
+    blockchainTxHash: { $exists: true },
+    blockchainLoggedAt: { $exists: false },
+  });
+
+  // Get recent transactions for the dashboard
+  const recentTransactions = await BlockchainLog.find({
+    referenceModel: 'PurchaseOrder',
+  })
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .populate('referenceId', 'poNumber')
+    .lean();
+
+  const enriched = recentTransactions.map((tx: any) => ({
+    _id: tx._id,
+    poNumber: tx.referenceId?.poNumber || tx.referenceId,
+    eventType: tx.eventType,
+    transactionHash: tx.txHash,
+    timestamp: tx.createdAt,
+    status: tx.confirmationStatus,
+  }));
+
+  return sendSuccess(res, {
+    totalPOs,
+    loggedOnChain,
+    pendingLogging,
+    recentTransactions: enriched,
+  });
 });
 
 /**
