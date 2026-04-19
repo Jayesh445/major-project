@@ -109,7 +109,7 @@ const adminRoutes = [
   },
   {
     title: "Blockchain Monitor",
-    href: "/dashboard/dev-tools/pending-transactions",
+    href: "/dashboard/admin/blockchain-monitor",
     icon: RefreshCw,
   },
 ]
