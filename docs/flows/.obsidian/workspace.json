@@ -4,24 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "42d05eec4f99e1ca",
+        "id": "edae53ada22c53d5",
         "type": "tabs",
         "children": [
           {
-            "id": "54079a9710fb764b",
+            "id": "fce72328f80e0d5e",
             "type": "leaf",
             "state": {
-              "type": "canvas",
-              "state": {
-                "file": "AutoStock.canvas",
-                "viewState": {
-                  "x": -29.85923308778979,
-                  "y": 14.957518310504764,
-                  "zoom": -1.445407640859423
-                }
-              },
-              "icon": "lucide-layout-dashboard",
-              "title": "AutoStock"
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
             }
           }
         ]
@@ -97,7 +90,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "AutoStock.canvas",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -107,7 +99,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for AutoStock"
+              "title": "Backlinks"
             }
           },
           {
@@ -116,12 +108,11 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "AutoStock.canvas",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from AutoStock"
+              "title": "Outgoing links"
             }
           },
           {
@@ -159,13 +150,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "AutoStock.canvas",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of AutoStock"
+              "title": "Outline"
             }
           }
         ]
@@ -186,7 +176,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "54079a9710fb764b",
+  "active": "fce72328f80e0d5e",
   "lastOpenFiles": [
     "AutoStock.canvas",
     "05 Blockchain/Tamper Detection.md",

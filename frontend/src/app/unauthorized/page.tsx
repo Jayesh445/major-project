@@ -1,1 +1,25 @@
-import Link from "next/link"; import { Button } from "@/components/ui/button"; import { ShieldAlert } from "lucide-react"; export default function UnauthorizedPage() { return ( <div className="flex h-screen flex-col items-center justify-center gap-4 text-center"> <ShieldAlert className="h-16 w-16 text-destructive" /> <h1 className="text-4xl font-bold">401 Unauthorized</h1> <p className="text-lg text-muted-foreground"> You do not have permission to access this page. </p> <div className="flex gap-4"> <Button asChild variant="outline"> <Link href="/login">Back to Login</Link> </Button> <Button asChild> <Link href="/dashboard">Go to Dashboard</Link> </Button> </div> </div> ) }
+"use client"
+
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { ShieldAlert } from "lucide-react"
+
+export default function UnauthorizedPage() {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center gap-4 text-center">
+      <ShieldAlert className="h-16 w-16 text-destructive" />
+      <h1 className="text-4xl font-bold">401 Unauthorized</h1>
+      <p className="text-lg text-muted-foreground">
+        You do not have permission to access this page.
+      </p>
+      <div className="flex gap-4">
+        <Button asChild variant="outline">
+          <Link href="/login">Back to Login</Link>
+        </Button>
+        <Button asChild>
+          <Link href="/dashboard">Go to Dashboard</Link>
+        </Button>
+      </div>
+    </div>
+  )
+}

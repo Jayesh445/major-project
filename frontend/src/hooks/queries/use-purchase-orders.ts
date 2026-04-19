@@ -114,3 +114,122 @@ export const useRejectPO = () => {
     },
   });
 };
+
+export const useSubmitPOForApproval = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => poService.submitForApproval(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders', data._id] });
+      toast({
+        title: 'PO Submitted',
+        description: 'Purchase Order submitted for approval.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to submit PO',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useSendPOToSupplier = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => poService.sendToSupplier(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders', data._id] });
+      toast({
+        title: 'PO Sent',
+        description: 'Purchase Order sent to supplier.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to send PO',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useAcknowledgePO = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => poService.acknowledge(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders', data._id] });
+      toast({
+        title: 'PO Acknowledged',
+        description: 'Purchase Order acknowledged by supplier.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to acknowledge PO',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useReceivePO = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => poService.receive(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders', data._id] });
+      toast({
+        title: 'PO Received',
+        description: 'Purchase Order marked as received.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to receive PO',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useCancelPO = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (id: string) => poService.cancel(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
+      toast({
+        title: 'PO Cancelled',
+        description: 'Purchase Order has been cancelled.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.response?.data?.message || 'Failed to cancel PO',
+        variant: 'destructive',
+      });
+    },
+  });
+};

@@ -7,7 +7,11 @@ import { formatDate } from "@/lib/utils/format"
 
 export const columns: ColumnDef<InventoryItem>[] = [
   {
-    accessorKey: "product.name", // Assuming product is populated
+    id: "product",
+    accessorFn: (row) => {
+      const product = row.product
+      return typeof product === 'object' ? product.name : product
+    },
     header: "Product",
     cell: ({ row }) => {
       const product = row.original.product
@@ -15,7 +19,11 @@ export const columns: ColumnDef<InventoryItem>[] = [
     }
   },
   {
-    accessorKey: "warehouse.name", // Assuming warehouse is populated
+    id: "warehouse",
+    accessorFn: (row) => {
+      const warehouse = row.warehouse
+      return typeof warehouse === 'object' ? warehouse.name : warehouse
+    },
     header: "Warehouse",
     cell: ({ row }) => {
       const warehouse = row.original.warehouse
@@ -23,8 +31,12 @@ export const columns: ColumnDef<InventoryItem>[] = [
     }
   },
   {
-    accessorKey: "quantity",
-    header: "Quantity",
+    accessorKey: "currentStock",
+    header: "Current Stock",
+  },
+  {
+    accessorKey: "reorderPoint",
+    header: "Reorder Point",
   },
   {
     accessorKey: "zone",
@@ -44,12 +56,12 @@ interface InventoryTableProps {
 
 export function InventoryTable({ data, isLoading }: InventoryTableProps) {
   return (
-    <DataTable 
-      columns={columns} 
-      data={data} 
+    <DataTable
+      columns={columns}
+      data={data}
       isLoading={isLoading}
-      searchKey="product.name" // This might need custom filter function for nested
-      searchPlaceholder="Filter inventory..."
+      searchKey="product"
+      searchPlaceholder="Filter by product name..."
     />
   )
 }

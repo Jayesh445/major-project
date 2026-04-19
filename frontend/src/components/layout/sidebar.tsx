@@ -72,6 +72,11 @@ const adminRoutes = [
     icon: Truck,
   },
   {
+    title: "Replenishment",
+    href: "/dashboard/procurement/replenishment",
+    icon: RefreshCw,
+  },
+  {
     title: "Analytics",
     href: "/dashboard/admin/analytics",
     icon: BarChart,
@@ -184,6 +189,7 @@ const supplierRoutes = [
 
 export function Sidebar({ className, role = "admin" }: SidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
 
   const getRoutes = () => {
@@ -229,7 +235,17 @@ export function Sidebar({ className, role = "admin" }: SidebarProps) {
         </nav>
       </div>
       <div className="mt-auto p-4">
-        <Button variant="outline" className="w-full justify-start gap-2">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2"
+          onClick={() => {
+            useAuthStore.getState().logout()
+            try {
+              localStorage.removeItem("auth-storage")
+            } catch {}
+            router.push("/login")
+          }}
+        >
           <LogOut className="h-4 w-4" />
           Logout
         </Button>

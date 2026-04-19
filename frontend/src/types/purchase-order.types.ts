@@ -53,9 +53,12 @@ export interface CreatePODto {
     sku: string;
     orderedQty: number;
     unitPrice: number;
+    totalPrice: number;
   }[];
   expectedDeliveryDate?: string;
   notes?: string;
+  currency?: string;
+  triggeredBy?: TriggeredBy;
 }
 
 export interface UpdatePODto {

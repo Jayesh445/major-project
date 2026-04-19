@@ -1,0 +1,9 @@
+node_modules
+.mastra
+.env
+.env.*
+*.md
+.git
+.gitignore
+.vscode
+fly.toml

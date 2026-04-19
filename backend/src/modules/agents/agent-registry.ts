@@ -1,0 +1,267 @@
+/**
+ * Static metadata for all 9 Mastra AI agents.
+ * This is the single source of truth for agent descriptions, workflow IDs,
+ * and flow diagrams used by the Agent Hub UI.
+ */
+
+export interface AgentMetadata {
+  id: string;
+  name: string;
+  workflowId: string;        // Mastra workflow name (camelCase)
+  description: string;
+  longDescription: string;
+  framework: 'Mastra AI';
+  model: string;
+  category: 'forecast' | 'optimization' | 'negotiation' | 'procurement' | 'evaluation' | 'monitoring' | 'quality';
+  stateful: boolean;
+  steps: string[];           // Workflow step names in order
+  tools: string[];
+  inputs: { name: string; type: string; required: boolean; description: string }[];
+  outputs: { name: string; type: string; description: string }[];
+  triggeredBy: string;
+}
+
+export const AGENT_REGISTRY: Record<string, AgentMetadata> = {
+  'forecast-agent': {
+    id: 'forecast-agent',
+    name: 'Demand Forecast Agent',
+    workflowId: 'forecastWorkflow',
+    description: 'Predicts 7-day demand using historical sales data',
+    longDescription:
+      'Analyzes up to 90 days of historical sales transactions, extracts trend direction, seasonality, and standard deviation, then generates a 7-day demand forecast with 95% confidence intervals. Uses a two-pass LLM approach (pattern analysis + forecast generation) combined with AR-Net-style decomposition.',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'forecast',
+    stateful: false,
+    steps: [
+      'validate-inputs',
+      'fetch-historical-data',
+      'generate-forecast',
+      'save-forecast',
+    ],
+    tools: ['validateInputTool', 'fetchHistoricalDataTool'],
+    inputs: [
+      { name: 'productId', type: 'string', required: true, description: 'MongoDB Product ObjectId' },
+      { name: 'warehouseId', type: 'string', required: true, description: 'MongoDB Warehouse ObjectId' },
+    ],
+    outputs: [
+      { name: 'forecastId', type: 'string', description: 'The saved DemandForecast document ID' },
+      { name: 'predictions', type: 'array', description: '7-day demand predictions with confidence intervals' },
+    ],
+    triggeredBy: 'Scheduler (daily cron) or manual trigger',
+  },
+
+  'warehouse-optimization-agent': {
+    id: 'warehouse-optimization-agent',
+    name: 'Warehouse Optimization Agent',
+    workflowId: 'warehouseOptimizationWorkflow',
+    description: 'Rebalances inventory across warehouses to optimize capacity',
+    longDescription:
+      'Analyzes warehouse capacity utilization across multiple facilities, identifies overstocked/understocked warehouses, and generates 3-5 inter-warehouse transfer recommendations. Enforces safety-stock preservation: no transfer is allowed to deplete the source warehouse below its safety threshold.',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'optimization',
+    stateful: false,
+    steps: [
+      'fetch-warehouses',
+      'fetch-inventory',
+      'generate-optimization',
+      'save-recommendations',
+    ],
+    tools: ['fetchWarehousesTool', 'fetchInventoryDataTool', 'calculateDistanceTool'],
+    inputs: [],
+    outputs: [
+      { name: 'recommendationId', type: 'string', description: 'The saved recommendation document ID' },
+      { name: 'transferRecommendations', type: 'array', description: '3-5 transfer suggestions' },
+      { name: 'predictedCostReduction', type: 'number', description: 'Estimated % cost reduction' },
+    ],
+    triggeredBy: 'Warehouse Manager (manual) or auto-trigger on capacity alerts',
+  },
+
+  'negotiation-agent': {
+    id: 'negotiation-agent',
+    name: 'Buyer Negotiation Agent',
+    workflowId: 'negotiationWorkflow',
+    description: 'Autonomously negotiates with suppliers using BATNA strategy',
+    longDescription:
+      'Role-plays as Priya Sharma, a senior procurement manager with 12 years experience. Conducts multi-round negotiation against the Supplier Simulator Agent. Uses a strict maximum price (pmax) never revealed to the supplier, employs BATNA (Best Alternative to Negotiated Agreement), and produces human-like multi-sentence messages with real business context.',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'negotiation',
+    stateful: true,
+    steps: [
+      'validate-negotiation-inputs',
+      'execute-two-agent-negotiation',
+      'persist-negotiation-results',
+    ],
+    tools: [
+      'fetchEligibleSuppliersTool',
+      'createNegotiationSessionTool',
+      'submitNegotiationOfferTool',
+      'finalizeNegotiationTool',
+    ],
+    inputs: [
+      { name: 'productId', type: 'string', required: true, description: 'Product to procure' },
+      { name: 'warehouseId', type: 'string', required: true, description: 'Destination warehouse' },
+      { name: 'requiredQty', type: 'number', required: true, description: 'Units needed' },
+      { name: 'maxUnitPrice', type: 'number', required: true, description: 'Hard ceiling (pmax) — never revealed' },
+      { name: 'targetUnitPrice', type: 'number', required: true, description: 'Ideal negotiation target' },
+      { name: 'maxLeadTimeDays', type: 'number', required: true, description: 'Maximum acceptable lead time' },
+    ],
+    outputs: [
+      { name: 'negotiationIds', type: 'array', description: 'Sessions created' },
+      { name: 'purchaseOrderId', type: 'string', description: 'PO created if deal accepted' },
+      { name: 'savingsPercent', type: 'number', description: 'Savings vs list price' },
+      { name: 'finalPrice', type: 'number', description: 'Accepted unit price' },
+    ],
+    triggeredBy: 'Procurement Officer or auto_replenishment trigger',
+  },
+
+  'supplier-simulator-agent': {
+    id: 'supplier-simulator-agent',
+    name: 'Supplier Simulator Agent',
+    workflowId: 'negotiationWorkflow',
+    description: 'Plays the supplier role in multi-round negotiations',
+    longDescription:
+      'Role-plays as Rajesh Kumar, a senior B2B sales manager with 15 years experience. Has a hidden floor price (30-40% below list) it will never breach. Concedes slowly (2-4% early, 1-2% later rounds), defends pricing with real business reasons (raw material costs, GST, MD approval), and preserves the business relationship even when deals fail. Only runs as part of the negotiation workflow.',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'negotiation',
+    stateful: true,
+    steps: ['(invoked within negotiation-workflow round loop)'],
+    tools: [],
+    inputs: [{ name: 'N/A', type: 'N/A', required: false, description: 'Called internally by the buyer agent' }],
+    outputs: [
+      { name: 'supplierResponse', type: 'object', description: 'Counter-offer with price/lead/payment/qty' },
+      { name: 'message', type: 'string', description: 'Multi-sentence human reply' },
+    ],
+    triggeredBy: 'Negotiation workflow (not directly invokable)',
+  },
+
+  'procurement-orchestrator-agent': {
+    id: 'procurement-orchestrator-agent',
+    name: 'Procurement Orchestrator Agent',
+    workflowId: 'procurementWorkflow',
+    description: 'Monitors stock levels, calculates EOQ, triggers negotiations',
+    longDescription:
+      'Acts as the master procurement coordinator. Checks current inventory against reorder points, factors in pending POs and forecast data, calculates Economic Order Quantity (EOQ) using operations research formulas, and determines negotiation parameters (pmax, target, max lead time). Returns an urgency classification (critical/high/medium/low) based on days until stockout.',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'procurement',
+    stateful: false,
+    steps: ['assess-replenishment', 'calculate-order-params'],
+    tools: ['checkReplenishmentNeedTool', 'calculateEOQTool', 'getSupplierOptionsTool'],
+    inputs: [
+      { name: 'productId', type: 'string', required: true, description: 'Product to check' },
+      { name: 'warehouseId', type: 'string', required: true, description: 'Warehouse to check' },
+    ],
+    outputs: [
+      { name: 'action', type: 'string', description: 'trigger_negotiation | no_action | escalate' },
+      { name: 'negotiationParams', type: 'object', description: 'pmax, target, max lead time, qty' },
+      { name: 'urgency', type: 'string', description: 'critical | high | medium | low' },
+    ],
+    triggeredBy: 'Cron job or manual stock check',
+  },
+
+  'supplier-evaluation-agent': {
+    id: 'supplier-evaluation-agent',
+    name: 'Supplier Evaluation Agent',
+    workflowId: 'supplierEvaluationWorkflow',
+    description: 'Scores and ranks suppliers using the Supplier Reliability Index',
+    longDescription:
+      'Continuously evaluates suppliers across 4 dimensions: on-time delivery (35%), quality/cancellation rate (25%), price competitiveness (25%), and responsiveness (15%). Computes a Supplier Reliability Index (SRI) score 0-100 per supplier and classifies them as excellent/good/average/underperforming/critical. Flags supplier concentration risks and single-source products.',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'evaluation',
+    stateful: false,
+    steps: ['gather-supplier-data', 'score-and-rank-suppliers'],
+    tools: [
+      'fetchAllSuppliersTool',
+      'fetchSupplierPOHistoryTool',
+      'updateSupplierRatingTool',
+    ],
+    inputs: [],
+    outputs: [
+      { name: 'supplierScores', type: 'array', description: 'Ranked SRI scores per supplier' },
+      { name: 'alerts', type: 'array', description: 'Warnings/criticals flagged' },
+    ],
+    triggeredBy: 'Weekly cron or admin manual run',
+  },
+
+  'anomaly-detection-agent': {
+    id: 'anomaly-detection-agent',
+    name: 'Anomaly Detection Agent',
+    workflowId: 'anomalyDetectionWorkflow',
+    description: 'Detects fraud, stockouts, and capacity anomalies in real-time',
+    longDescription:
+      'Scans inventory, purchase orders, and warehouse capacity for anomalies across 4 categories: inventory (stock below safety, imbalances), procurement (unusual PO amounts, supplier concentration), warehouse (overflow/underutilization), and demand (forecast deviations). Classifies each anomaly by severity (critical/warning/info) and computes an overall system health score.',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'monitoring',
+    stateful: false,
+    steps: ['collect-system-data', 'analyze-anomalies'],
+    tools: [
+      'fetchInventorySnapshotTool',
+      'fetchRecentPOActivityTool',
+      'fetchWarehouseCapacityTool',
+    ],
+    inputs: [],
+    outputs: [
+      { name: 'anomalies', type: 'array', description: 'Detected anomalies with severity' },
+      { name: 'overallHealthScore', type: 'number', description: '0-100 system health score' },
+    ],
+    triggeredBy: 'Hourly cron or real-time trigger on alerts',
+  },
+
+  'smart-reorder-agent': {
+    id: 'smart-reorder-agent',
+    name: 'Smart Reorder Agent',
+    workflowId: 'smartReorderWorkflow',
+    description: 'Intelligent reorder planning with EOQ and order consolidation',
+    longDescription:
+      'Scans all inventory across all warehouses, calculates EOQ for each product needing reorder, considers bulk-discount thresholds, seasonal demand adjustments, and consolidates orders to the same supplier to reduce ordering costs. Prioritizes by urgency (days until stockout).',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'procurement',
+    stateful: false,
+    steps: ['scan-inventory-for-reorder', 'generate-reorder-plan'],
+    tools: ['getReorderAnalysisTool', 'calculateEOQTool'],
+    inputs: [],
+    outputs: [
+      { name: 'reorderRecommendations', type: 'array', description: 'Products to reorder with quantities' },
+    ],
+    triggeredBy: 'Procurement Officer manual run or daily cron',
+  },
+
+  'quality-control-agent': {
+    id: 'quality-control-agent',
+    name: 'Quality Control Agent',
+    workflowId: 'qualityControlWorkflow',
+    description: 'Verifies goods receipt against POs and logs to blockchain',
+    longDescription:
+      'When a shipment arrives, cross-references received items with the purchase order, flags discrepancies (short shipments, over shipments, wrong items, damaged goods, price mismatches), and writes an immutable audit entry to the Ethereum Sepolia blockchain via SHA-256 hashing. Tamper detection is automatic: any post-signature modification produces a hash mismatch that halts payment settlement.',
+    framework: 'Mastra AI',
+    model: 'google/gemini-2.0-flash',
+    category: 'quality',
+    stateful: false,
+    steps: ['fetch-and-validate-po', 'verify-and-record-receipt'],
+    tools: [
+      'fetchPOForVerificationTool',
+      'recordGoodsReceiptTool',
+      'verifyBlockchainHashTool',
+      'logToBlockchainTool',
+    ],
+    inputs: [
+      { name: 'purchaseOrderId', type: 'string', required: true, description: 'PO being received' },
+      { name: 'receivedItems', type: 'array', required: true, description: 'Items actually received with quality status' },
+    ],
+    outputs: [
+      { name: 'verificationStatus', type: 'string', description: 'passed | partial | failed' },
+      { name: 'discrepancies', type: 'array', description: 'Any mismatches found' },
+      { name: 'blockchainTxHash', type: 'string', description: 'On-chain transaction hash' },
+    ],
+    triggeredBy: 'Warehouse staff at goods receipt dock',
+  },
+};
+
+export const ALL_AGENT_IDS = Object.keys(AGENT_REGISTRY);

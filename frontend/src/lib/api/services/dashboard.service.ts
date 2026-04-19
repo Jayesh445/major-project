@@ -1,10 +1,16 @@
 import apiClient from '../client';
 
 export interface RecentActivity {
-  type: 'purchase_order' | 'negotiation' | 'forecast';
+  type: string;
+  agentId?: string;
+  runId?: string;
   title: string;
   description: string;
+  status?: string;
+  durationMs?: number | null;
   timestamp: string;
+  triggeredBy?: { _id: string; name: string; email: string } | string | null;
+  link?: string;
 }
 
 export interface AdminStats {

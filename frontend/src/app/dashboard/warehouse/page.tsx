@@ -15,24 +15,28 @@ export default function WarehouseDashboardPage() {
       value: stats ? stats.totalInventory.toLocaleString() : "...",
       icon: Package,
       description: "Units across all warehouses",
+      link: "/dashboard/warehouse/inventory",
     },
     {
       title: "Pending Receiving",
       value: stats ? String(stats.pendingReceiving) : "...",
       icon: Truck,
       description: "POs waiting for GRN",
+      link: "/dashboard/warehouse/receiving",
     },
     {
       title: "Low Stock Alerts",
       value: stats ? String(stats.lowStockAlerts) : "...",
       icon: AlertTriangle,
       description: "Items at or below reorder point",
+      link: "/dashboard/warehouse/inventory",
     },
     {
       title: "Active Transfers",
       value: stats ? String(stats.activeTransfers) : "...",
       icon: ArrowLeftRight,
       description: "Accepted optimization transfers",
+      link: "/dashboard/warehouse/transfers",
     },
   ]
 
@@ -45,7 +49,13 @@ export default function WarehouseDashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat, index) => (
-          <StatCard key={index} {...stat} />
+          <div
+            key={index}
+            onClick={() => window.location.href = stat.link}
+            className="cursor-pointer transition-transform hover:scale-105"
+          >
+            <StatCard {...stat} />
+          </div>
         ))}
       </div>
 

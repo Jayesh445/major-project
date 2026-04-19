@@ -1,15 +1,30 @@
 "use client"
 
 import { StatCard } from "@/components/business/stat-card"
-import { Users, Package, Warehouse, Truck, Handshake, TrendingUp, ShieldCheck } from "lucide-react"
+import {
+  Users,
+  Package,
+  Warehouse,
+  Truck,
+  Handshake,
+  TrendingUp,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Loader2,
+  ArrowRight,
+} from "lucide-react"
 import { PageHeader } from "@/components/business/page-header"
 import { Badge } from "@/components/ui/badge"
 import { useAdminStats } from "@/hooks/queries/use-dashboard"
+import Link from "next/link"
 
-const activityIcons: Record<string, string> = {
-  purchase_order: "bg-blue-500",
-  negotiation: "bg-green-500",
-  forecast: "bg-purple-500",
+const statusStyles: Record<string, { color: string; icon: any }> = {
+  success: { color: "bg-green-500", icon: CheckCircle2 },
+  failed: { color: "bg-red-500", icon: XCircle },
+  running: { color: "bg-blue-500", icon: Loader2 },
+  timeout: { color: "bg-orange-500", icon: AlertTriangle },
 }
 
 function timeAgo(timestamp: string) {
@@ -143,22 +158,34 @@ export default function AdminDashboardPage() {
                 No recent activity. Run an agent from the Agent Hub to see activity here.
               </p>
             ) : (
-              stats.recentActivity.map((activity, i) => (
-                <div key={i} className="flex items-center gap-4">
-                  <div className={`h-2 w-2 rounded-full ${activityIcons[activity.type] || "bg-gray-500"}`} />
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {activity.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.description}
-                    </p>
+              stats.recentActivity.map((activity, i) => {
+                const style = statusStyles[activity.status || ""] || { color: "bg-gray-500", icon: ArrowRight }
+                const Icon = style.icon
+                const content = (
+                  <div className="flex items-center gap-3 p-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer group">
+                    <div className={`h-2 w-2 rounded-full ${style.color} shrink-0`} />
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                      <p className="text-sm font-medium leading-none truncate group-hover:text-primary">
+                        {activity.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {activity.description}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-xs shrink-0">
+                      {timeAgo(activity.timestamp)}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="text-xs shrink-0">
-                    {timeAgo(activity.timestamp)}
-                  </Badge>
-                </div>
-              ))
+                )
+
+                return activity.link ? (
+                  <Link key={i} href={activity.link}>
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={i}>{content}</div>
+                )
+              })
             )}
           </div>
         </div>

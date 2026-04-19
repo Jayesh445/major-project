@@ -12,6 +12,15 @@ import {
   updateSupplierStats,
 } from '../api-client.js';
 
+// Helper to format buyer + supplier messages into the agentReasoning string
+function buildReasoning(buyer: any, supplier: any) {
+  const parts: string[] = [];
+  if (buyer?.message) parts.push(`Buyer: ${buyer.message}`);
+  if (buyer?.reasoning) parts.push(`Buyer reasoning: ${buyer.reasoning}`);
+  if (supplier?.message) parts.push(`Supplier: ${supplier.message}`);
+  return parts.join(' | ');
+}
+
 const MAX_ROUNDS = 3;
 const LLM_DELAY_MS = 1500; // Small throttle; Gemma has more generous quota
 
@@ -161,6 +170,28 @@ const executeNegotiationStep = createStep({
       // Calculate supplier's hidden floor price (30-40% margin below list)
       const supplierFloorPrice = supplier.listPrice * (0.6 + Math.random() * 0.15);
 
+      // ── Create the NegotiationSession in the DB IMMEDIATELY so the UI shows it as in_progress ──
+      let sessionId: string | undefined;
+      try {
+        const created = await createNegotiation({
+          supplier: supplier.supplierId,
+          product: product.id,
+          initiatedBy: constraints.initiatedBy || 'auto_replenishment',
+          status: 'in_progress',
+          agentConstraints: {
+            maxUnitPrice: constraints.maxUnitPrice,
+            targetUnitPrice: constraints.targetUnitPrice,
+            maxLeadTimeDays: constraints.maxLeadTimeDays,
+            requiredQty: constraints.requiredQty,
+          },
+          deadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        });
+        sessionId = created._id;
+        console.log(`[Negotiation]   Created session ${sessionId} (in_progress)`);
+      } catch (e) {
+        console.error('[Negotiation] Failed to create session up front:', e);
+      }
+
       for (let round = 1; round <= MAX_ROUNDS && !negotiationOver; round++) {
         console.log(`[Negotiation]   Round ${round} with ${supplier.companyName}`);
 
@@ -210,7 +241,25 @@ Return ONLY valid JSON with a FULL conversational message.`;
 
         // Throttle to stay within Gemini free-tier rate limits
         await new Promise(r => setTimeout(r, LLM_DELAY_MS));
-        const buyerResult = await buyerAgent.generate([{ role: 'user', content: buyerContext }]);
+
+        let buyerResult: any;
+        try {
+          buyerResult = await buyerAgent.generate([{ role: 'user', content: buyerContext }]);
+        } catch (llmErr: any) {
+          // Hard LLM failure (rate limit, network) — mark session as failed and bail
+          console.error('[Negotiation] Buyer LLM call failed:', llmErr.message);
+          if (sessionId) {
+            try {
+              await updateNegotiation(sessionId, {
+                status: 'rejected',
+                completedAt: new Date(),
+              });
+            } catch {}
+          }
+          finalStatus = 'rejected';
+          negotiationOver = true;
+          continue;
+        }
 
         let buyerData;
         try {
@@ -223,7 +272,7 @@ Return ONLY valid JSON with a FULL conversational message.`;
 
         // Check buyer's decision
         if (buyerData.action === 'accept') {
-          rounds.push({
+          const acceptRound = {
             round,
             buyer: {
               action: 'accept',
@@ -232,14 +281,28 @@ Return ONLY valid JSON with a FULL conversational message.`;
               reasoning: buyerData.reasoning,
             },
             supplier: null,
-          });
+          };
+          rounds.push(acceptRound);
+          if (sessionId) {
+            try {
+              await addNegotiationRound(sessionId, {
+                roundNumber: round,
+                agentOffer: acceptRound.buyer.offer,
+                agentReasoning: buildReasoning(acceptRound.buyer, null),
+                status: 'accepted',
+                timestamp: new Date(),
+              });
+            } catch (e) {
+              console.warn('[Negotiation] Failed to persist accept round:', e);
+            }
+          }
           finalStatus = 'accepted';
           negotiationOver = true;
           continue;
         }
 
         if (buyerData.action === 'reject') {
-          rounds.push({
+          const rejectRound = {
             round,
             buyer: {
               action: 'reject',
@@ -248,7 +311,21 @@ Return ONLY valid JSON with a FULL conversational message.`;
               reasoning: buyerData.reasoning,
             },
             supplier: null,
-          });
+          };
+          rounds.push(rejectRound);
+          if (sessionId) {
+            try {
+              await addNegotiationRound(sessionId, {
+                roundNumber: round,
+                agentOffer: rejectRound.buyer.offer,
+                agentReasoning: buildReasoning(rejectRound.buyer, null),
+                status: 'rejected',
+                timestamp: new Date(),
+              });
+            } catch (e) {
+              console.warn('[Negotiation] Failed to persist reject round:', e);
+            }
+          }
           finalStatus = 'rejected';
           negotiationOver = true;
           continue;
@@ -297,7 +374,24 @@ If Priya's offer is below your floor price after round 3+, you can set willingTo
 Return ONLY valid JSON with a FULL conversational "message" field.`;
 
         await new Promise(r => setTimeout(r, LLM_DELAY_MS));
-        const supplierResult = await supplierAgent.generate([{ role: 'user', content: supplierContext }]);
+
+        let supplierResult: any;
+        try {
+          supplierResult = await supplierAgent.generate([{ role: 'user', content: supplierContext }]);
+        } catch (llmErr: any) {
+          console.error('[Negotiation] Supplier LLM call failed:', llmErr.message);
+          if (sessionId) {
+            try {
+              await updateNegotiation(sessionId, {
+                status: 'rejected',
+                completedAt: new Date(),
+              });
+            } catch {}
+          }
+          finalStatus = 'rejected';
+          negotiationOver = true;
+          continue;
+        }
 
         let supplierData;
         try {
@@ -321,7 +415,7 @@ Return ONLY valid JSON with a FULL conversational "message" field.`;
           message: supplierData.message,
         };
 
-        rounds.push({
+        const counterRound = {
           round,
           buyer: {
             action: buyerData.action,
@@ -337,7 +431,34 @@ Return ONLY valid JSON with a FULL conversational "message" field.`;
             willingToContinue: supplierData.willingToContinue ?? true,
             concessionPercent: supplierData.concessionPercent ?? 0,
           },
-        });
+        };
+        rounds.push(counterRound);
+
+        // ── Persist this round to the session immediately so the UI shows live progress ──
+        if (sessionId) {
+          try {
+            await addNegotiationRound(sessionId, {
+              roundNumber: round,
+              agentOffer: {
+                unitPrice: counterRound.buyer.offer?.unitPrice,
+                leadTimeDays: counterRound.buyer.offer?.leadTimeDays,
+                paymentTermsDays: counterRound.buyer.offer?.paymentTermsDays,
+                quantity: counterRound.buyer.offer?.quantity,
+              },
+              supplierCounterOffer: {
+                unitPrice: counterRound.supplier.offer?.unitPrice,
+                leadTimeDays: counterRound.supplier.offer?.leadTimeDays,
+                paymentTermsDays: counterRound.supplier.offer?.paymentTermsDays,
+                quantity: counterRound.supplier.offer?.quantity,
+              },
+              agentReasoning: buildReasoning(counterRound.buyer, counterRound.supplier),
+              status: 'countered',
+              timestamp: new Date(),
+            });
+          } catch (e) {
+            console.warn('[Negotiation] Failed to persist counter round:', e);
+          }
+        }
 
         // If supplier won't continue, end it
         if (!supplierData.willingToContinue) {
@@ -346,6 +467,9 @@ Return ONLY valid JSON with a FULL conversational "message" field.`;
         }
       }
 
+      // Attach the live sessionId to the negotiation result so step 3 can update instead of duplicate
+      const liveSessionId = sessionId;
+
       // Determine final price
       const finalPrice = finalStatus === 'accepted'
         ? (lastSupplierOffer?.unitPrice ?? supplier.listPrice)
@@ -353,6 +477,7 @@ Return ONLY valid JSON with a FULL conversational "message" field.`;
 
       const negotiationResult = {
         supplierId: supplier.supplierId,
+        liveSessionId: sessionId, // session created up-front in step 2
         companyName: supplier.companyName,
         listPrice: supplier.listPrice,
         rounds,
@@ -467,68 +592,64 @@ const persistNegotiationResultsStep = createStep({
           ? 'rejected'  // was accepted but another supplier won
           : neg.finalStatus;
 
-      const session = await createNegotiation({
-        supplier: neg.supplierId,
-        product: inputData.product.id,
-        initiatedBy: inputData.constraints.initiatedBy || 'auto_replenishment',
-        status,
-        agentConstraints: {
-          maxUnitPrice: inputData.constraints.maxUnitPrice,
-          targetUnitPrice: inputData.constraints.targetUnitPrice,
-          maxLeadTimeDays: inputData.constraints.maxLeadTimeDays,
-          requiredQty: inputData.constraints.requiredQty,
-        },
-        finalTerms: status === 'accepted' && neg.finalPrice
-          ? {
-              unitPrice: neg.finalPrice,
-              leadTimeDays: neg.leadTimeDays,
-              paymentTermsDays: neg.paymentTermsDays,
-              moq: inputData.constraints.requiredQty,
-              savingsPercent: Math.round((neg.savingsPercent ?? 0) * 100) / 100,
-            }
-          : undefined,
-        completedAt: new Date(),
-        deadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      });
+      const finalTerms = status === 'accepted' && neg.finalPrice
+        ? {
+            unitPrice: neg.finalPrice,
+            leadTimeDays: neg.leadTimeDays,
+            paymentTermsDays: neg.paymentTermsDays,
+            moq: inputData.constraints.requiredQty,
+            savingsPercent: Math.round((neg.savingsPercent ?? 0) * 100) / 100,
+          }
+        : undefined;
 
-      negotiationIds.push(session._id);
-
-      // Save each round
-      for (const round of neg.rounds) {
-        totalRounds++;
-        await addNegotiationRound(session._id, {
-          roundNumber: round.round,
-          agentOffer: round.buyer?.offer
-            ? {
-                unitPrice: round.buyer.offer.unitPrice,
-                leadTimeDays: round.buyer.offer.leadTimeDays,
-                paymentTermsDays: round.buyer.offer.paymentTermsDays,
-                quantity: round.buyer.offer.quantity,
-              }
-            : undefined,
-          supplierCounterOffer: round.supplier?.offer
-            ? {
-                unitPrice: round.supplier.offer.unitPrice,
-                leadTimeDays: round.supplier.offer.leadTimeDays,
-                paymentTermsDays: round.supplier.offer.paymentTermsDays,
-                quantity: round.supplier.offer.quantity,
-              }
-            : undefined,
-          agentReasoning: [
-            `Buyer: ${round.buyer?.message || ''}`,
-            `Buyer reasoning: ${round.buyer?.reasoning || ''}`,
-            round.supplier ? `Supplier: ${round.supplier.message || ''}` : '',
-          ]
-            .filter(Boolean)
-            .join(' | '),
-          status: round.buyer?.action === 'accept'
-            ? 'accepted'
-            : round.buyer?.action === 'reject'
-              ? 'rejected'
-              : 'countered',
-          timestamp: new Date(),
+      // If we have a live session (created up-front in step 2), update it instead of creating a duplicate
+      let sessionDocId: string;
+      if (neg.liveSessionId) {
+        await updateNegotiation(neg.liveSessionId, {
+          status,
+          finalTerms,
+          completedAt: new Date(),
         });
+        sessionDocId = neg.liveSessionId;
+        // Rounds were already pushed live during step 2 — don't double-write them
+        totalRounds += (neg.rounds?.length || 0);
+      } else {
+        // Fallback path (shouldn't normally happen now, but kept for safety)
+        const session = await createNegotiation({
+          supplier: neg.supplierId,
+          product: inputData.product.id,
+          initiatedBy: inputData.constraints.initiatedBy || 'auto_replenishment',
+          status,
+          agentConstraints: {
+            maxUnitPrice: inputData.constraints.maxUnitPrice,
+            targetUnitPrice: inputData.constraints.targetUnitPrice,
+            maxLeadTimeDays: inputData.constraints.maxLeadTimeDays,
+            requiredQty: inputData.constraints.requiredQty,
+          },
+          finalTerms,
+          completedAt: new Date(),
+          deadline: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        });
+        sessionDocId = session._id;
+
+        for (const round of neg.rounds) {
+          totalRounds++;
+          await addNegotiationRound(sessionDocId, {
+            roundNumber: round.round,
+            agentOffer: round.buyer?.offer,
+            supplierCounterOffer: round.supplier?.offer,
+            agentReasoning: buildReasoning(round.buyer, round.supplier),
+            status: round.buyer?.action === 'accept'
+              ? 'accepted'
+              : round.buyer?.action === 'reject'
+                ? 'rejected'
+                : 'countered',
+            timestamp: new Date(),
+          });
+        }
       }
+
+      negotiationIds.push(sessionDocId);
     }
 
     // Create PO if a deal was accepted

@@ -15,6 +15,7 @@ import PurchaseOrder from '@/modules/purchase-order/model';
 import BlockchainLog from '@/modules/blockchain/model';
 import DemandForecast from '@/modules/forecast/model';
 import WarehouseOptimizationRecommendation from '@/modules/warehouse-optimization/model';
+import ReorderRecommendation from '@/modules/agents/reorder-recommendation.model';
 import { asyncHandler } from '@/utils';
 
 const router = Router();
@@ -381,6 +382,43 @@ router.get(
       .limit(Number(limit) || 10)
       .lean();
     return res.json(forecasts);
+  })
+);
+
+// ── Reorder Recommendations ──────────────────────────────────────────────────
+
+// POST /api/internal/reorder-recommendations — bulk upsert from smart-reorder workflow
+router.post(
+  '/reorder-recommendations',
+  asyncHandler(async (req: Request, res: Response) => {
+    const { recommendations } = req.body;
+    if (!Array.isArray(recommendations)) {
+      return res.status(400).json({ message: 'recommendations must be an array' });
+    }
+
+    // Mark any previous pending recommendations for the same product-warehouse as expired
+    // so the new ones become the active set
+    const productWarehousePairs = recommendations.map((r: any) => ({
+      product: r.product,
+      warehouse: r.warehouse,
+    }));
+
+    if (productWarehousePairs.length > 0) {
+      await ReorderRecommendation.updateMany(
+        {
+          status: 'pending',
+          $or: productWarehousePairs.map((pw: any) => ({
+            product: pw.product,
+            warehouse: pw.warehouse,
+          })),
+        },
+        { $set: { status: 'expired' } }
+      );
+    }
+
+    // Insert new recommendations
+    const created = await ReorderRecommendation.insertMany(recommendations);
+    return res.status(201).json({ count: created.length, ids: created.map((c) => c._id) });
   })
 );
 

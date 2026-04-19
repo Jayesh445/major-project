@@ -220,3 +220,14 @@ export async function getForecasts(filters?: {
   if (filters?.limit) params.set('limit', String(filters.limit));
   return internalFetch(`/forecasts?${params.toString()}`);
 }
+
+// ── Reorder Recommendations ──────────────────────────────────────────────────
+
+export async function saveReorderRecommendations(
+  recommendations: any[]
+): Promise<{ count: number; ids: string[] }> {
+  return internalFetch('/reorder-recommendations', {
+    method: 'POST',
+    body: JSON.stringify({ recommendations }),
+  });
+}

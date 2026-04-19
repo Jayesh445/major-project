@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { DollarSign, TrendingDown, ShoppingCart, Clock } from "lucide-react"
 import { useProcurementStats } from "@/hooks/queries/use-dashboard"
 import { usePurchaseOrders } from "@/hooks/queries/use-purchase-orders"
-
+import { useRouter } from "next/navigation"
 export default function CostAnalysisPage() {
+  const router = useRouter()
   const { data: stats } = useProcurementStats()
   const { data: posData } = usePurchaseOrders()
   const orders = posData?.data || []
@@ -38,7 +39,11 @@ export default function CostAnalysisPage() {
               <p className="text-sm text-muted-foreground text-center py-4">No purchase orders found.</p>
             ) : (
               orders.slice(0, 10).map((po: any) => (
-                <div key={po._id} className="flex items-center justify-between p-3 rounded-lg border">
+                <div
+                  key={po._id}
+                  onClick={() => router.push(`/dashboard/procurement/orders/${po._id}`)}
+                  className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors"
+                >
                   <div>
                     <p className="text-sm font-medium">{po.poNumber}</p>
                     <p className="text-xs text-muted-foreground">

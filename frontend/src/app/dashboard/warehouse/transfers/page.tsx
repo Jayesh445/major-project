@@ -8,8 +8,11 @@ import { useAllOptimizations, useUpdateOptimizationStatus } from "@/hooks/querie
 import { Button } from "@/components/ui/button"
 
 export default function TransfersPage() {
-  const { data: optimizations, isLoading } = useAllOptimizations()
+  const { data: optimizationsData, isLoading } = useAllOptimizations()
   const updateStatus = useUpdateOptimizationStatus()
+
+  // Handle different data structures - might be array or object with data property
+  const optimizations = Array.isArray(optimizationsData) ? optimizationsData : (optimizationsData?.data || [])
 
   return (
     <div className="space-y-6">
@@ -22,7 +25,7 @@ export default function TransfersPage() {
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
-      ) : !optimizations || optimizations.length === 0 ? (
+      ) : !optimizations || !Array.isArray(optimizations) || optimizations.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <ArrowLeftRight className="h-12 w-12 text-muted-foreground mb-4" />

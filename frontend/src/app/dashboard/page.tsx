@@ -7,9 +7,13 @@ import { LoadingSpinner } from "@/components/shared/loading-spinner"
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const hasHydrated = useAuthStore((s) => s.hasHydrated)
 
   useEffect(() => {
+    if (!hasHydrated) return
+
     if (!isAuthenticated) {
       router.push("/login")
       return
@@ -27,14 +31,13 @@ export default function DashboardPage() {
           router.push("/dashboard/procurement")
           break
         case "supplier":
-          router.push("/dashboard/supplier")
+          router.push("/dashboard/supplier/catalog")
           break
         default:
-          // Fallback if no specific role dashboard
-          router.push("/dashboard/admin") 
+          router.push("/dashboard/admin")
       }
     }
-  }, [user, isAuthenticated, router])
+  }, [hasHydrated, user, isAuthenticated, router])
 
   return (
     <div className="flex h-[calc(100vh-4rem)] items-center justify-center">

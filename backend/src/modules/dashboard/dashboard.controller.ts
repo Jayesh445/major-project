@@ -11,6 +11,7 @@ import DemandForecast from '@/modules/forecast/model';
 import WarehouseOptimizationRecommendation from '@/modules/warehouse-optimization/model';
 import NegotiationSession from '@/modules/negotiation/model';
 import BlockchainLog from '@/modules/blockchain/model';
+import AgentRun from '@/modules/agents/agent-run.model';
 
 /**
  * GET /api/dashboard/admin-stats
@@ -20,7 +21,7 @@ export const getAdminStats = asyncHandler(async (_req: Request, res: Response) =
   const [
     totalUsers, totalProducts, totalWarehouses, activeSuppliers,
     totalNegotiations, totalForecasts, totalBlockchainLogs,
-    recentPOs, recentNegotiations, recentForecasts,
+    recentAgentRuns,
   ] = await Promise.all([
     User.countDocuments({ isActive: true }),
     Product.countDocuments({ isActive: true }),
@@ -29,20 +30,10 @@ export const getAdminStats = asyncHandler(async (_req: Request, res: Response) =
     NegotiationSession.countDocuments(),
     DemandForecast.countDocuments(),
     BlockchainLog.countDocuments(),
-    PurchaseOrder.find().sort({ createdAt: -1 }).limit(5)
-      .populate('supplier', 'companyName')
-      .populate('warehouse', 'name code')
-      .select('poNumber status totalAmount triggeredBy createdAt')
-      .lean(),
-    NegotiationSession.find().sort({ createdAt: -1 }).limit(5)
-      .populate('supplier', 'companyName')
-      .populate('product', 'name sku')
-      .select('status finalTerms rounds createdAt')
-      .lean(),
-    DemandForecast.find().sort({ forecastedAt: -1 }).limit(5)
-      .populate('product', 'name sku')
-      .populate('warehouse', 'name code')
-      .select('totalPredicted7Day modelVersion forecastedAt')
+    AgentRun.find()
+      .sort({ startedAt: -1 })
+      .limit(20)
+      .populate('triggeredBy', 'name email')
       .lean(),
   ]);
 
@@ -62,36 +53,47 @@ export const getAdminStats = asyncHandler(async (_req: Request, res: Response) =
       ? Math.round((warehouseAgg[0].usedCapacity / warehouseAgg[0].totalCapacity) * 100)
       : 0;
 
-  // Build recent activity from real events
-  const recentActivity: any[] = [];
+  // Build recent activity from agent runs — every agent execution with clickable link
+  const agentNameMap: Record<string, string> = {
+    'forecast-agent': 'Demand Forecast Agent',
+    'warehouse-optimization-agent': 'Warehouse Optimization Agent',
+    'negotiation-agent': 'Negotiation Agent',
+    'supplier-simulator-agent': 'Supplier Simulator Agent',
+    'procurement-orchestrator-agent': 'Procurement Orchestrator Agent',
+    'supplier-evaluation-agent': 'Supplier Evaluation Agent',
+    'anomaly-detection-agent': 'Anomaly Detection Agent',
+    'smart-reorder-agent': 'Smart Reorder Agent',
+    'quality-control-agent': 'Quality Control Agent',
+  };
 
-  for (const po of recentPOs) {
-    recentActivity.push({
-      type: 'purchase_order',
-      title: `PO ${(po as any).poNumber} — ${(po as any).supplier?.companyName || 'Supplier'}`,
-      description: `₹${((po as any).totalAmount || 0).toLocaleString('en-IN')} | ${(po as any).status}`,
-      timestamp: (po as any).createdAt,
-    });
-  }
-  for (const neg of recentNegotiations) {
-    recentActivity.push({
-      type: 'negotiation',
-      title: `Negotiation with ${(neg as any).supplier?.companyName || 'Supplier'}`,
-      description: `${(neg as any).rounds?.length || 0} rounds | ${(neg as any).status}${(neg as any).finalTerms ? ` | ₹${(neg as any).finalTerms.unitPrice}/unit` : ''}`,
-      timestamp: (neg as any).createdAt,
-    });
-  }
-  for (const fc of recentForecasts) {
-    recentActivity.push({
-      type: 'forecast',
-      title: `Forecast: ${(fc as any).product?.name || 'Product'} @ ${(fc as any).warehouse?.code || 'WH'}`,
-      description: `7-day predicted: ${(fc as any).totalPredicted7Day} units`,
-      timestamp: (fc as any).forecastedAt,
-    });
-  }
+  const recentActivity = recentAgentRuns.map((run: any) => {
+    const agentName = agentNameMap[run.agentId] || run.agentId;
+    const durationStr = run.durationMs != null
+      ? run.durationMs < 1000
+        ? `${run.durationMs}ms`
+        : `${Math.floor(run.durationMs / 1000)}s`
+      : '—';
 
-  // Sort by timestamp, most recent first
-  recentActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Extract a user-friendly description per agent type
+    let description = `${run.status} | ${durationStr}`;
+    if (run.error) {
+      description += ` | ${String(run.error).slice(0, 80)}`;
+    }
+
+    return {
+      type: run.agentId,
+      agentId: run.agentId,
+      runId: run._id,
+      title: `${agentName} — ${run.status}`,
+      description,
+      status: run.status,
+      durationMs: run.durationMs,
+      timestamp: run.startedAt,
+      triggeredBy: run.triggeredBy,
+      // Link to the agent detail page where full run history is visible
+      link: `/dashboard/dev-tools/agent-hub/${run.agentId}`,
+    };
+  });
 
   return res.json(
     new ApiResponse(200, {
@@ -103,7 +105,7 @@ export const getAdminStats = asyncHandler(async (_req: Request, res: Response) =
       totalNegotiations,
       totalForecasts,
       totalBlockchainLogs,
-      recentActivity: recentActivity.slice(0, 10),
+      recentActivity: recentActivity.slice(0, 15),
     }, 'Admin stats fetched')
   );
 });

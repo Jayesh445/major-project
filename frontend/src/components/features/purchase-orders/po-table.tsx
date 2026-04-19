@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { QRModal } from "@/components/features/blockchain/qr-modal"
+import { useRouter } from "next/navigation"
 
 const formatCurrency = (n: number) =>
   `₹${(n ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
@@ -24,6 +25,7 @@ const formatDate = (d: string) => new Date(d).toLocaleDateString()
 
 function POActionsCell({ po }: { po: PurchaseOrder }) {
   const [qrOpen, setQrOpen] = useState(false)
+  const router = useRouter()
 
   return (
     <>
@@ -40,7 +42,7 @@ function POActionsCell({ po }: { po: PurchaseOrder }) {
             Copy PO Number
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push(`/dashboard/procurement/orders/${po._id}`)}>
             <Eye className="mr-2 h-4 w-4" /> View Details
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setQrOpen(true)}>

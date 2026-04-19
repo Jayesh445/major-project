@@ -1,6 +1,11 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
-import { getAllInventory, getPurchaseOrders, getSuppliersByProduct } from '../api-client.js';
+import {
+  getAllInventory,
+  getPurchaseOrders,
+  getSuppliersByProduct,
+  saveReorderRecommendations,
+} from '../api-client.js';
 
 // ── Step 1: Scan all inventory for reorder needs ─────────────────────────────
 const scanInventoryStep = createStep({
@@ -79,17 +84,17 @@ const scanInventoryStep = createStep({
   },
 });
 
-// ── Step 2: Generate smart reorder plan via AI agent ─────────────────────────
+// ── Step 2: Compute EOQ, supplier info, and save recommendations ─────────────
 const generateReorderPlanStep = createStep({
   id: 'generate-reorder-plan',
-  description: 'Uses AI agent to create an optimized reorder plan with EOQ calculations',
+  description: 'Computes EOQ for each product, enriches with supplier info, and persists recommendations',
   inputSchema: z.object({
     allProducts: z.array(z.any()),
     needingReorder: z.array(z.any()),
   }),
   outputSchema: z.object({
     analysisDate: z.string(),
-    reorderRecommendations: z.array(z.any()),
+    recommendationIds: z.array(z.string()),
     summary: z.object({
       totalProducts: z.number(),
       needingReorder: z.number(),
@@ -97,12 +102,12 @@ const generateReorderPlanStep = createStep({
       estimatedTotalSpend: z.number(),
     }),
   }),
-  execute: async ({ inputData, mastra }) => {
+  execute: async ({ inputData }) => {
     if (inputData.needingReorder.length === 0) {
       console.log('[SmartReorder] No products need reordering');
       return {
         analysisDate: new Date().toISOString().split('T')[0],
-        reorderRecommendations: [],
+        recommendationIds: [],
         summary: {
           totalProducts: inputData.allProducts.length,
           needingReorder: 0,
@@ -112,59 +117,115 @@ const generateReorderPlanStep = createStep({
       };
     }
 
-    const agent = mastra?.getAgent('smartReorderAgent');
-    if (!agent) throw new Error('Smart reorder agent not found');
+    console.log('[SmartReorder] Step 2: Computing EOQ + enriching with supplier data...');
 
-    console.log('[SmartReorder] Step 2: Generating reorder plan...');
+    const orderingCostPerPO = 500;
+    const holdingCostPerUnit = 50;
+    const recommendations: any[] = [];
 
-    const productList = inputData.needingReorder
-      .map(
-        (p: any) =>
-          `- ${p.sku} (${p.productName}) @ ${p.warehouseName}: stock=${p.availableStock}, ROP=${p.reorderPoint}, safety=${p.safetyStock}, demand=${p.avgDailyDemand}/day, daysLeft=${p.daysUntilStockout}, pending=${p.pendingIncoming}`
-      )
-      .join('\n');
+    for (const p of inputData.needingReorder) {
+      // EOQ formula: sqrt(2 * annualDemand * orderingCost / holdingCost)
+      const annualDemand = p.avgDailyDemand * 365;
+      const eoq = Math.ceil(
+        Math.sqrt((2 * annualDemand * orderingCostPerPO) / holdingCostPerUnit)
+      );
 
-    const prompt = `Generate an optimized reorder plan for the following products:
+      // Fetch supplier info for pricing
+      let supplierCount = 0;
+      let minSupplierPrice = 0;
+      let avgSupplierLeadTime = 7;
+      try {
+        const suppliers = await getSuppliersByProduct(p.productId);
+        supplierCount = suppliers.length;
+        const catalogEntries = suppliers
+          .map((s: any) => {
+            const entry = s.catalogProducts?.find(
+              (cp: any) =>
+                cp.product?._id?.toString() === p.productId ||
+                cp.product?.toString() === p.productId
+            );
+            return entry;
+          })
+          .filter(Boolean);
 
-**Products Needing Reorder (${inputData.needingReorder.length}):**
-${productList}
+        const prices = catalogEntries.map((e: any) => e.unitPrice).filter((x: number) => x > 0);
+        const leadTimes = catalogEntries.map((e: any) => e.leadTimeDays).filter((x: number) => x > 0);
 
-**Total Products Monitored:** ${inputData.allProducts.length}
+        minSupplierPrice = prices.length > 0 ? Math.min(...prices) : 0;
+        avgSupplierLeadTime = leadTimes.length > 0
+          ? Math.round(leadTimes.reduce((a: number, b: number) => a + b, 0) / leadTimes.length)
+          : 7;
+      } catch (e) {
+        console.warn(`[SmartReorder] Failed to fetch suppliers for ${p.sku}:`, e);
+      }
 
-Use the tools to calculate EOQ for each product and generate recommendations.
-Assume: ordering cost = 500 INR/PO, holding cost = 50 INR/unit/year, lead time std dev = 2 days.
-Return ONLY valid JSON. No markdown, no code blocks.`;
+      // Recommended qty: max(EOQ, 7 days of demand buffer)
+      const weeklyDemand = Math.ceil(p.avgDailyDemand * 7);
+      const recommendedQty = Math.max(eoq, weeklyDemand);
 
-    const result = await agent.generate([{ role: 'user', content: prompt }]);
+      // Urgency based on days until stockout
+      const urgency =
+        p.daysUntilStockout <= 3 ? 'critical' :
+        p.daysUntilStockout <= 7 ? 'high' :
+        p.daysUntilStockout <= 14 ? 'medium' : 'low';
 
-    let data;
-    try {
-      const text = result.text || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      data = JSON.parse(jsonMatch ? jsonMatch[0] : text);
-    } catch {
-      data = {
-        analysisDate: new Date().toISOString().split('T')[0],
-        reorderRecommendations: [],
-        summary: {
-          totalProducts: inputData.allProducts.length,
-          needingReorder: inputData.needingReorder.length,
-          criticalItems: inputData.needingReorder.filter((p: any) => p.daysUntilStockout <= 3).length,
-          estimatedTotalSpend: 0,
-        },
-      };
+      // Generate reason text
+      const reasonParts = [
+        `Stock at ${p.availableStock} units vs ROP ${p.reorderPoint}`,
+        `${p.daysUntilStockout} days until stockout at current demand`,
+      ];
+      if (urgency === 'critical') reasonParts.unshift('CRITICAL:');
+      if (supplierCount === 0) reasonParts.push('WARNING: No approved suppliers');
+      if (supplierCount === 1) reasonParts.push('Single-source risk');
+      const reason = reasonParts.join(' | ');
+
+      const estimatedUnitPrice = minSupplierPrice || 100; // fallback
+      const estimatedTotalCost = estimatedUnitPrice * recommendedQty;
+
+      recommendations.push({
+        product: p.productId,
+        warehouse: p.warehouseId,
+        currentStock: p.currentStock,
+        availableStock: p.availableStock,
+        reorderPoint: p.reorderPoint,
+        safetyStock: p.safetyStock,
+        avgDailyDemand: p.avgDailyDemand,
+        daysUntilStockout: p.daysUntilStockout,
+        pendingIncoming: p.pendingIncoming,
+        recommendedQty,
+        eoq,
+        estimatedUnitPrice,
+        estimatedTotalCost,
+        urgency,
+        reason,
+        supplierCount,
+        minSupplierPrice,
+        avgSupplierLeadTime,
+        status: 'pending',
+      });
     }
 
-    console.log(`[SmartReorder] Generated ${data.reorderRecommendations?.length ?? 0} recommendations`);
+    // Persist to MongoDB
+    let savedIds: string[] = [];
+    try {
+      const result = await saveReorderRecommendations(recommendations);
+      savedIds = result.ids;
+      console.log(`[SmartReorder] Saved ${result.count} recommendations`);
+    } catch (e) {
+      console.error('[SmartReorder] Failed to save:', e);
+    }
+
+    const criticalItems = recommendations.filter((r) => r.urgency === 'critical').length;
+    const estimatedTotalSpend = recommendations.reduce((sum, r) => sum + r.estimatedTotalCost, 0);
 
     return {
-      analysisDate: data.analysisDate || new Date().toISOString().split('T')[0],
-      reorderRecommendations: data.reorderRecommendations || [],
-      summary: data.summary || {
+      analysisDate: new Date().toISOString().split('T')[0],
+      recommendationIds: savedIds,
+      summary: {
         totalProducts: inputData.allProducts.length,
-        needingReorder: inputData.needingReorder.length,
-        criticalItems: 0,
-        estimatedTotalSpend: 0,
+        needingReorder: recommendations.length,
+        criticalItems,
+        estimatedTotalSpend: Math.round(estimatedTotalSpend),
       },
     };
   },
@@ -176,7 +237,7 @@ export const smartReorderWorkflow = createWorkflow({
   inputSchema: z.object({}),
   outputSchema: z.object({
     analysisDate: z.string(),
-    reorderRecommendations: z.array(z.any()),
+    recommendationIds: z.array(z.string()),
     summary: z.object({
       totalProducts: z.number(),
       needingReorder: z.number(),

@@ -5,9 +5,11 @@ import { usePurchaseOrders } from "@/hooks/queries/use-purchase-orders"
 import { PageHeader } from "@/components/business/page-header"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 export default function PurchaseOrdersPage() {
   const { data, isLoading } = usePurchaseOrders()
+  const router = useRouter()
 
   return (
     <div className="space-y-6">
@@ -15,7 +17,7 @@ export default function PurchaseOrdersPage() {
         title="Purchase Orders"
         description="Manage procurement and supplier orders"
         actions={
-          <Button>
+          <Button onClick={() => router.push('/dashboard/procurement/orders/new')}>
             <Plus className="mr-2 h-4 w-4" /> Create PO
           </Button>
         }
