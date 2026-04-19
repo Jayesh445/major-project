@@ -33,6 +33,7 @@ export interface IBlockchainLog extends Document {
   payload: any;
   txHash: string;
   blockNumber?: number;
+  blockHash?: string; // Hash of the block containing this transaction
   networkName: string;
   confirmedAt?: Date;
   confirmationStatus: ConfirmationStatus;
@@ -91,6 +92,11 @@ const BlockchainLogSchema = new Schema<IBlockchainLog>(
       type: Number,
       min: [0, 'Block number cannot be negative'],
     },
+    blockHash: {
+      type: String,
+      trim: true,
+      match: [/^0x[a-fA-F0-9]{64}$/, 'Invalid block hash format'],
+    },
     networkName: {
       type: String,
       required: [true, 'Network name is required'],
@@ -125,6 +131,7 @@ BlockchainLogSchema.index({ eventType: 1 });
 BlockchainLogSchema.index({ referenceId: 1 });
 BlockchainLogSchema.index({ confirmationStatus: 1 });
 BlockchainLogSchema.index({ networkName: 1 });
+BlockchainLogSchema.index({ blockHash: 1 }, { sparse: true });
 
 // Compound indexes
 BlockchainLogSchema.index({ referenceModel: 1, referenceId: 1 });

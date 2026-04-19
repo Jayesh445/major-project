@@ -9,6 +9,12 @@ import {
   getEtherscanUrl,
 } from './service';
 import { EVENT_TYPE_ENUM } from './constants';
+import {
+  handleAlchemyWebhook,
+  verifyAlchemySignature,
+  getWebhookSigningKey,
+  AlchemyWebhookEvent,
+} from './webhook.service';
 
 /**
  * POST /api/blockchain/log  (internal, called by Mastra via internal.routes.ts)
@@ -160,4 +166,42 @@ export const getLatestLogs = asyncHandler(async (req: Request, res: Response) =>
   }));
 
   return sendSuccess(res, enriched);
+});
+
+/**
+ * POST /api/blockchain/webhook
+ * Alchemy webhook endpoint — receives real-time transaction confirmations.
+ * This is a public endpoint that Alchemy calls directly (no auth required).
+ */
+export const handleWebhook = asyncHandler(async (req: Request, res: Response) => {
+  // Verify webhook signature
+  const signatureHeader = req.headers['x-alchemy-signature'];
+  const signature = Array.isArray(signatureHeader) ? signatureHeader[0] : signatureHeader;
+  const body = (req as any).rawBody || JSON.stringify(req.body); // rawBody is set by body parser middleware
+  const signingKey = getWebhookSigningKey();
+
+  if (!verifyAlchemySignature(body, signature, signingKey)) {
+    throw new ApiError(HttpStatus.UNAUTHORIZED, 'Invalid webhook signature');
+  }
+
+  const webhookEvent = req.body as AlchemyWebhookEvent;
+
+  // Validate webhook structure
+  if (!webhookEvent.block || !Array.isArray(webhookEvent.block.logs)) {
+    console.warn('[Webhook] Invalid webhook event structure:', webhookEvent);
+    // Still return 200 to prevent Alchemy retry
+    return sendSuccess(res, { received: true, error: 'Invalid structure' });
+  }
+
+  // Process the webhook (update BlockchainLog status)
+  try {
+    await handleAlchemyWebhook(webhookEvent);
+  } catch (err) {
+    console.error('[Webhook] Failed to process:', err);
+    // Still return 200 to Alchemy so they don't retry
+  }
+
+  // Always return 200 OK to Alchemy (even if processing fails)
+  // This prevents Alchemy from retrying the webhook
+  return sendSuccess(res, { received: true, logsProcessed: webhookEvent.block.logs.length }, 'Webhook processed');
 });

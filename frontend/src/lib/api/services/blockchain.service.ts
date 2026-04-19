@@ -103,4 +103,20 @@ export const blockchainService = {
     const res = await qrClient.get(`/po/${poId}?type=${eventType}`);
     return res.data.data;
   },
+
+  getPendingTransactions: async (): Promise<BlockchainLogEntry[]> => {
+    const res = await bcClient.get('/logs?confirmationStatus=pending&limit=50');
+    return res.data.data || [];
+  },
+
+  getTransactionStatus: async (txHash: string): Promise<BlockchainLogEntry> => {
+    const res = await bcClient.get(`/logs/tx/${txHash}`);
+    return res.data.data;
+  },
+
+  getTransactionWithLogs: async (referenceId: string): Promise<BlockchainLogEntry | null> => {
+    const res = await bcClient.get(`/logs/${referenceId}?sort=createdAt&limit=1`);
+    const logs = res.data.data as BlockchainLogEntry[];
+    return logs && logs.length > 0 ? logs[0] : null;
+  },
 };

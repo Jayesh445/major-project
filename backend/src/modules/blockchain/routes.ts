@@ -6,12 +6,17 @@ import {
   verifyByReference,
   getLogsByReferenceHandler,
   getLatestLogs,
+  handleWebhook,
 } from './controller';
 
 const router = Router();
 
 // Public verification endpoint (used by QR scan at receiving dock — no auth needed)
 router.get('/verify/:referenceId', verifyByReference);
+
+// Alchemy webhook endpoint (public, called by Alchemy service — no auth needed)
+// This receives real-time transaction confirmations
+router.post('/webhook', handleWebhook);
 
 // Internal endpoint (called by Mastra workflows via internal.routes.ts)
 router.post('/log', internalAuth, createLog);

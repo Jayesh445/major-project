@@ -4,6 +4,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { InventoryItem } from "@/types/inventory.types"
 import { DataTable } from "@/components/shared/data-table"
 import { formatDate } from "@/lib/utils/format"
+import { useRouter } from "next/navigation"
 
 export const columns: ColumnDef<InventoryItem>[] = [
   {
@@ -52,9 +53,12 @@ export const columns: ColumnDef<InventoryItem>[] = [
 interface InventoryTableProps {
   data: InventoryItem[]
   isLoading?: boolean
+  onRowClick?: (item: InventoryItem) => void
 }
 
-export function InventoryTable({ data, isLoading }: InventoryTableProps) {
+export function InventoryTable({ data, isLoading, onRowClick }: InventoryTableProps) {
+  const router = useRouter()
+
   return (
     <DataTable
       columns={columns}
@@ -62,6 +66,14 @@ export function InventoryTable({ data, isLoading }: InventoryTableProps) {
       isLoading={isLoading}
       searchKey="product"
       searchPlaceholder="Filter by product name..."
+      onRowClick={onRowClick || ((row) => {
+        // Navigate to product detail page if available
+        const product = row.product
+        const productId = typeof product === 'object' ? product._id : product
+        if (productId) {
+          router.push(`/dashboard/admin/products/${productId}`)
+        }
+      })}
     />
   )
 }

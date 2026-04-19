@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import PurchaseOrder, { IPurchaseOrder, ILineItem, POStatus } from './model';
 import { ApiError } from '@/utils/ApiError';
+import { logEventOnChain, getLogsByReference } from '@/modules/blockchain/service';
+import BlockchainLog from '@/modules/blockchain/model';
 import type {
   CreatePurchaseOrderDto,
   UpdatePurchaseOrderDto,
@@ -71,10 +73,54 @@ export class PurchaseOrderService {
 
     await po.save();
 
-    // TODO: Create notification for procurement team
-    // TODO: Log blockchain event (po_created)
+    // Log blockchain event asynchronously (don't block PO creation)
+    try {
+      const lineItemsPayload = po.lineItems.map((li: any) => ({
+        sku: li.sku,
+        orderedQty: li.orderedQty,
+        unitPrice: li.unitPrice,
+        totalPrice: li.totalPrice,
+      }));
 
-    return po.populate('supplier warehouse lineItems.product createdBy');
+      const blockchainResult = await logEventOnChain({
+        eventType: 'po_created',
+        referenceModel: 'PurchaseOrder',
+        referenceId: po._id.toString(),
+        payload: {
+          poNumber: po.poNumber,
+          supplier: po.supplier.toString(),
+          warehouse: po.warehouse.toString(),
+          lineItems: lineItemsPayload,
+          totalAmount: po.totalAmount,
+          currency: po.currency,
+          triggeredBy: po.triggeredBy || 'system',
+        },
+        amount: po.totalAmount,
+        triggeredBy: userId,
+      });
+
+      // Update PO with blockchain transaction hash and timestamp
+      po.blockchainTxHash = blockchainResult.txHash;
+      po.blockchainLoggedAt = new Date();
+      await po.save();
+
+      console.log(`[Blockchain] po_created logged for PO ${po.poNumber} with txHash ${blockchainResult.txHash}`);
+    } catch (err) {
+      console.error(`[Blockchain] Failed to log po_created for PO ${po.poNumber}:`, err);
+      // Don't throw — PO creation already succeeded
+    }
+
+    // TODO: Create notification for procurement team
+
+    // Fetch fresh PO from database with all fields populated
+    const freshPO = await PurchaseOrder.findById(po._id)
+      .populate('supplier', 'companyName contactEmail contactPhone address')
+      .populate('warehouse', 'name code location')
+      .populate('lineItems.product', 'sku name category unitPrice')
+      .populate('createdBy approvedBy', 'name email role')
+      .populate('negotiationSession');
+
+    return freshPO as IPurchaseOrder;
   }
 
   /**
@@ -138,6 +184,7 @@ export class PurchaseOrderService {
         .limit(limit)
         .populate('supplier', 'companyName contactEmail')
         .populate('warehouse', 'name code')
+        .populate('lineItems.product', 'sku name category unitPrice')
         .populate('createdBy approvedBy', 'name email')
         .lean(),
       PurchaseOrder.countDocuments(filter),
@@ -614,6 +661,44 @@ export class PurchaseOrderService {
 
     if (!product.isActive) {
       throw new ApiError(400, `Product '${product.name}' is not active`);
+    }
+  }
+
+  /**
+   * Sync blockchain status for a PO
+   * Called when blockchain logs are updated to reflect confirmation status
+   * @private
+   */
+  async syncBlockchainStatus(poId: string): Promise<void> {
+    try {
+      const po = await PurchaseOrder.findById(poId);
+      if (!po) return;
+
+      // Find the po_created blockchain log for this PO
+      const blockchainLogs = await BlockchainLog.find({
+        referenceModel: 'PurchaseOrder',
+        referenceId: poId,
+        eventType: 'po_created',
+      }).sort({ createdAt: -1 });
+
+      if (blockchainLogs.length === 0) return;
+
+      const latestLog = blockchainLogs[0];
+
+      // Update PO with blockchain information
+      po.blockchainTxHash = latestLog.txHash;
+      po.blockchainLoggedAt = latestLog.confirmedAt || latestLog.createdAt;
+
+      await po.save();
+
+      if (latestLog.confirmationStatus === 'confirmed') {
+        console.log(
+          `[PurchaseOrder] Updated blockchain status for PO ${po.poNumber}: confirmed on block ${latestLog.blockNumber}`
+        );
+      }
+    } catch (err) {
+      console.error(`[PurchaseOrder] Failed to sync blockchain status for ${poId}:`, err);
+      // Don't throw — this is a background operation
     }
   }
 }

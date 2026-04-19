@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { POTable } from "@/components/features/purchase-orders/po-table"
 import { usePurchaseOrders } from "@/hooks/queries/use-purchase-orders"
 import { PageHeader } from "@/components/business/page-header"
@@ -8,7 +9,8 @@ import { Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 export default function PurchaseOrdersPage() {
-  const { data, isLoading } = usePurchaseOrders()
+  const [page, setPage] = useState(1)
+  const { data, isLoading } = usePurchaseOrders({ page, limit: 10 })
   const router = useRouter()
 
   return (
@@ -22,8 +24,13 @@ export default function PurchaseOrdersPage() {
           </Button>
         }
       />
-      
-      <POTable data={data?.data || []} isLoading={isLoading} />
+
+      <POTable
+        data={data?.data || []}
+        isLoading={isLoading}
+        pagination={data?.pagination}
+        onPageChange={setPage}
+      />
     </div>
   )
 }

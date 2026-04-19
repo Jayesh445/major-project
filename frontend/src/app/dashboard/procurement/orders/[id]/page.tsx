@@ -17,8 +17,14 @@ import {
   Download,
   Copy,
   CheckCircle2,
+  Send,
+  Check,
+  X,
+  Edit2,
+  AlertCircle,
 } from "lucide-react"
-import { usePurchaseOrder } from "@/hooks/queries/use-purchase-orders"
+import { usePurchaseOrder, useSubmitPOForApproval, useApprovePO, useRejectPO, useSendPOToSupplier, useAcknowledgePO, useReceivePO } from "@/hooks/queries/use-purchase-orders"
+import { useAuthStore } from "@/stores/auth-store"
 import { QRCodeSVG } from "qrcode.react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -51,7 +57,16 @@ export default function PurchaseOrderDetailPage({
 }) {
   const { id } = use(params)
   const { data: po, isLoading, error } = usePurchaseOrder(id)
+  const { user } = useAuthStore()
   const [copied, setCopied] = useState(false)
+
+  // Action mutations
+  const submitForApproval = useSubmitPOForApproval()
+  const approvePO = useApprovePO()
+  const rejectPO = useRejectPO()
+  const sendToSupplier = useSendPOToSupplier()
+  const acknowledgePO = useAcknowledgePO()
+  const receivePO = useReceivePO()
 
   if (isLoading) {
     return (
@@ -85,6 +100,78 @@ export default function PurchaseOrderDetailPage({
   const warehouse = typeof po.warehouse === "object" ? po.warehouse : null
   const lineItems = po.lineItems || []
 
+  // Determine available actions based on status and role
+  const getAvailableActions = () => {
+    const actions: Array<{
+      label: string
+      onClick: () => void
+      variant: "default" | "outline" | "destructive"
+      icon: React.ReactNode
+      loading: boolean
+    }> = []
+
+    if (po.status === "draft" && user?.role === "procurement_officer") {
+      actions.push({
+        label: "Submit for Approval",
+        onClick: () => submitForApproval.mutate(id),
+        variant: "default",
+        icon: <Send className="h-4 w-4" />,
+        loading: submitForApproval.isPending,
+      })
+    }
+
+    if (po.status === "pending_approval" && user?.role === "admin") {
+      actions.push({
+        label: "Approve",
+        onClick: () => approvePO.mutate(id),
+        variant: "default",
+        icon: <Check className="h-4 w-4" />,
+        loading: approvePO.isPending,
+      })
+      actions.push({
+        label: "Reject",
+        onClick: () => rejectPO.mutate({ id, reason: "Rejected by admin" }),
+        variant: "destructive",
+        icon: <X className="h-4 w-4" />,
+        loading: rejectPO.isPending,
+      })
+    }
+
+    if (po.status === "approved" && (user?.role === "admin" || user?.role === "procurement_officer")) {
+      actions.push({
+        label: "Send to Supplier",
+        onClick: () => sendToSupplier.mutate(id),
+        variant: "default",
+        icon: <Send className="h-4 w-4" />,
+        loading: sendToSupplier.isPending,
+      })
+    }
+
+    if (po.status === "sent_to_supplier" && user?.role === "supplier") {
+      actions.push({
+        label: "Acknowledge",
+        onClick: () => acknowledgePO.mutate(id),
+        variant: "default",
+        icon: <Check className="h-4 w-4" />,
+        loading: acknowledgePO.isPending,
+      })
+    }
+
+    if ((po.status === "acknowledged" || po.status === "partially_received") && user?.role === "warehouse_manager") {
+      actions.push({
+        label: "Mark as Received",
+        onClick: () => receivePO.mutate({ id, po }),
+        variant: "default",
+        icon: <Package className="h-4 w-4" />,
+        loading: receivePO.isPending,
+      })
+    }
+
+    return actions
+  }
+
+  const availableActions = po ? getAvailableActions() : []
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -97,6 +184,55 @@ export default function PurchaseOrderDetailPage({
           </Badge>
         }
       />
+
+      {/* Action Buttons */}
+      {availableActions.length > 0 && (
+        <Card className="border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                <AlertCircle className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-blue-900 mb-1">
+                  Next Steps
+                </p>
+                <p className="text-xs text-blue-700 mb-4">
+                  Choose an action to move this purchase order forward
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {availableActions.map((action, idx) => (
+                    <Button
+                      key={idx}
+                      variant={action.variant}
+                      size="lg"
+                      onClick={action.onClick}
+                      disabled={action.loading}
+                      className={`gap-2 font-semibold transition-all ${
+                        action.variant === "destructive"
+                          ? "hover:scale-105"
+                          : "hover:shadow-lg hover:scale-105"
+                      }`}
+                    >
+                      {action.loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          {action.icon}
+                          {action.label}
+                        </>
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: PO Details */}

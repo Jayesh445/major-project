@@ -192,13 +192,13 @@ export const useReceivePO = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: string) => poService.receive(id),
+    mutationFn: ({ id, po }: { id: string; po: any }) => poService.receive(id, po),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['purchase-orders'] });
       queryClient.invalidateQueries({ queryKey: ['purchase-orders', data._id] });
       toast({
-        title: 'PO Received',
-        description: 'Purchase Order marked as received.',
+        title: 'Success',
+        description: `PO marked as ${data.status === 'fully_received' ? 'fully' : 'partially'} received.`,
       });
     },
     onError: (error: any) => {

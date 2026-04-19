@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Handshake,
   Cpu,
+  User,
 } from "lucide-react"
 import {
   Sheet,
@@ -42,6 +43,11 @@ const commonRoutes = [
     title: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "My Profile",
+    href: "/dashboard/profile",
+    icon: User,
   },
 ]
 
@@ -72,6 +78,11 @@ const adminRoutes = [
     icon: Truck,
   },
   {
+    title: "Purchase Orders",
+    href: "/dashboard/procurement/orders",
+    icon: ShoppingCart,
+  },
+  {
     title: "Replenishment",
     href: "/dashboard/procurement/replenishment",
     icon: RefreshCw,
@@ -95,6 +106,11 @@ const adminRoutes = [
     title: "Agent Monitor",
     href: "/dashboard/dev-tools/agent-monitor",
     icon: Bot,
+  },
+  {
+    title: "Blockchain Monitor",
+    href: "/dashboard/dev-tools/pending-transactions",
+    icon: RefreshCw,
   },
 ]
 

@@ -29,7 +29,7 @@ export const poService = {
   },
 
   approve: async (id: string): Promise<PurchaseOrder> => {
-    const response = await apiClient.put(`/purchase-orders/${id}/approve`);
+    const response = await apiClient.put(`/purchase-orders/${id}/approve`, {});
     return response.data.data;
   },
 
@@ -39,22 +39,31 @@ export const poService = {
   },
 
   submitForApproval: async (id: string): Promise<PurchaseOrder> => {
-    const response = await apiClient.put(`/purchase-orders/${id}/submit-for-approval`);
+    const response = await apiClient.put(`/purchase-orders/${id}/submit-for-approval`, {});
     return response.data.data;
   },
 
   sendToSupplier: async (id: string): Promise<PurchaseOrder> => {
-    const response = await apiClient.put(`/purchase-orders/${id}/send`);
+    const response = await apiClient.put(`/purchase-orders/${id}/send`, {});
     return response.data.data;
   },
 
   acknowledge: async (id: string): Promise<PurchaseOrder> => {
-    const response = await apiClient.put(`/purchase-orders/${id}/acknowledge`);
+    const response = await apiClient.put(`/purchase-orders/${id}/acknowledge`, {});
     return response.data.data;
   },
 
-  receive: async (id: string): Promise<PurchaseOrder> => {
-    const response = await apiClient.put(`/purchase-orders/${id}/receive`);
+  receive: async (id: string, po?: any): Promise<PurchaseOrder> => {
+    // Auto-receive all line items
+    const lineItems = po?.lineItems?.map((item: any) => ({
+      lineItemId: item._id,
+      receivedQty: item.orderedQty - item.receivedQty, // Receive remaining qty
+    })) || [];
+
+    const response = await apiClient.put(`/purchase-orders/${id}/receive`, {
+      lineItems,
+      notes: "Received via dashboard",
+    });
     return response.data.data;
   },
 

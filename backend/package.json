@@ -13,7 +13,8 @@
     "seed": "tsx src/scripts/seed.ts",
     "seed:clean": "tsx src/scripts/seed.ts --clean",
     "data-seed": "tsx src/scripts/data-seed.ts",
-    "data-seed:clean": "tsx src/scripts/data-seed.ts --clean"
+    "data-seed:clean": "tsx src/scripts/data-seed.ts --clean",
+    "backfill:blockchain": "tsx src/scripts/backfill-blockchain-data.ts"
   },
   "keywords": [],
   "author": "",

@@ -17,6 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { QRModal } from "@/components/features/blockchain/qr-modal"
 import { useRouter } from "next/navigation"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 const formatCurrency = (n: number) =>
   `₹${(n ?? 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
@@ -120,19 +121,61 @@ export const columns: ColumnDef<PurchaseOrder>[] = [
   },
 ]
 
+interface Pagination {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
+}
+
 interface POTableProps {
   data: PurchaseOrder[]
   isLoading?: boolean
+  pagination?: Pagination
+  onPageChange?: (page: number) => void
 }
 
-export function POTable({ data, isLoading }: POTableProps) {
+export function POTable({ data, isLoading, pagination, onPageChange }: POTableProps) {
   return (
-    <DataTable
-      columns={columns}
-      data={data}
-      isLoading={isLoading}
-      searchKey="poNumber"
-      searchPlaceholder="Filter POs..."
-    />
+    <div className="space-y-4">
+      <DataTable
+        columns={columns}
+        data={data}
+        isLoading={isLoading}
+        searchKey="poNumber"
+        searchPlaceholder="Filter POs..."
+        disablePagination={!!pagination}
+      />
+
+      {pagination && (
+        <div className="flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(pagination.page - 1)}
+              disabled={!pagination.hasPrev}
+            >
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(pagination.page + 1)}
+              disabled={!pagination.hasNext}
+            >
+              Next
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

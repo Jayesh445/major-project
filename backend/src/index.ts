@@ -25,6 +25,24 @@ const PORT = parseInt(env.PORT, 10);
 
 // Middleware
 app.use(cors());
+
+// Capture raw body for webhook signature verification
+// Must come before express.json() to intercept the raw stream
+app.use((req: Request, res: Response, next) => {
+  if (req.path === '/api/blockchain/webhook') {
+    let rawBody = '';
+    req.on('data', (chunk) => {
+      rawBody += chunk.toString();
+    });
+    req.on('end', () => {
+      (req as any).rawBody = rawBody;
+      next();
+    });
+  } else {
+    next();
+  }
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
