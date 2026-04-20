@@ -1,5 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { minimaxHTTP } from '../models/minimax-http.js';
 import { getApprovedSuppliers, getPurchaseOrders } from '../api-client.js';
 
 // ── Step 1: Gather supplier data ─────────────────────────────────────────────
@@ -74,10 +75,7 @@ const scoreAndRankStep = createStep({
     alerts: z.array(z.any()),
     summary: z.string(),
   }),
-  execute: async ({ inputData, mastra }) => {
-    const agent = mastra?.getAgent('supplierEvaluationAgent');
-    if (!agent) throw new Error('Supplier evaluation agent not found');
-
+  execute: async ({ inputData }) => {
     console.log('[SupplierEval] Step 2: Scoring and ranking...');
 
     const supplierSummary = inputData.suppliers
@@ -97,13 +95,38 @@ ${supplierSummary}
 Score each supplier using the SRI formula, rank them, identify alerts, and provide recommendations.
 Return ONLY valid JSON. No markdown, no code blocks.`;
 
-    const result = await agent.generate([{ role: 'user', content: prompt }]);
-
     let data;
     try {
-      const text = result.text || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      data = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+      const message = await minimaxHTTP.chat(
+        [
+          {
+            role: 'system',
+            content: `You are a supplier evaluation AI. Score suppliers using the SRI (Supplier Readiness Index) formula based on quality, reliability, and innovation metrics.
+
+SRI = (Quality_Score * 0.4) + (Reliability_Score * 0.35) + (Innovation_Score * 0.25)
+
+Output format MUST be valid JSON only:
+{
+  "evaluationDate": "YYYY-MM-DD",
+  "supplierScores": [
+    {"supplierId": "id", "companyName": "name", "sriScore": number, "qualityScore": number, "reliabilityScore": number, "innovationScore": number, "rank": number, "recommendation": "approve|monitor|caution"}
+  ],
+  "alerts": [
+    {"supplierId": "id", "companyName": "name", "alertType": "late_delivery|quality_issue|overdue_payment", "severity": "critical|warning", "details": "details"}
+  ],
+  "summary": "summary of evaluation results"
+}`,
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        { temperature: 0, max_tokens: 2048 }
+      );
+
+      const jsonMatch = message.match(/\{[\s\S]*\}/);
+      data = JSON.parse(jsonMatch ? jsonMatch[0] : message);
     } catch {
       data = {
         evaluationDate: new Date().toISOString().split('T')[0],

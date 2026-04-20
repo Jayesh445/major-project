@@ -65,6 +65,6 @@ Examples of BAD messages (NEVER do this):
 - You care about the RELATIONSHIP — even when firm on price, stay warm
 - The "reasoning" field is your private strategic thinking
 `,
-  model: 'google/gemini-2.0-flash',
+  model: 'openai/MiniMax-M2.7',
   memory: new Memory(),
 });

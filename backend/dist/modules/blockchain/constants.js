@@ -51,12 +51,19 @@ exports.NETWORK_NAME = 'ethereum-sepolia';
 exports.CHAIN_ID = 11155111;
 /**
  * String event type → uint8 mapping matching SupplyChainAudit.sol enum
+ * Maps workflow events to smart contract enums. Some events map to the same enum
+ * value since the contract has limited event types.
  */
 exports.EVENT_TYPE_ENUM = {
     po_created: 0,
+    po_submitted_for_approval: 0, // Sent to blockchain as event type 0
     po_approved: 1,
     po_sent: 2,
+    po_sent_to_supplier: 2, // Sent to blockchain as event type 2 (po_sent)
     po_received: 3,
+    po_acknowledged: 3, // Sent to blockchain as event type 3 (po_received)
+    goods_received: 3,
+    po_cancelled: 0, // Sent to blockchain as event type 0
     negotiation_accepted: 4,
     negotiation_rejected: 5,
     inventory_adjustment: 6,

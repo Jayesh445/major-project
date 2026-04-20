@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleWebhook = exports.getLatestLogs = exports.getLogsByReferenceHandler = exports.verifyByReference = exports.createLog = void 0;
+exports.handleWebhook = exports.getBlockchainStatus = exports.getLatestLogs = exports.getLogsByReferenceHandler = exports.verifyByReference = exports.createLog = void 0;
 const utils_1 = require("@/utils");
 const model_1 = __importDefault(require("@/modules/purchase-order/model"));
 const model_2 = __importDefault(require("@/modules/negotiation/model"));
@@ -158,9 +158,10 @@ exports.getLogsByReferenceHandler = (0, utils_1.asyncHandler)(async (req, res) =
 /**
  * GET /api/blockchain/logs
  * Paginated list of all blockchain logs (for admin / audit trail view).
+ * Supports filtering by purchaseOrderId, eventType, referenceModel, and status.
  */
 exports.getLatestLogs = (0, utils_1.asyncHandler)(async (req, res) => {
-    const { limit = 50, eventType, referenceModel, status } = req.query;
+    const { limit = 50, eventType, referenceModel, status, purchaseOrderId } = req.query;
     const filter = {};
     if (eventType)
         filter.eventType = eventType;
@@ -168,6 +169,8 @@ exports.getLatestLogs = (0, utils_1.asyncHandler)(async (req, res) => {
         filter.referenceModel = referenceModel;
     if (status)
         filter.confirmationStatus = status;
+    if (purchaseOrderId)
+        filter.referenceId = purchaseOrderId;
     const BlockchainLog = (await Promise.resolve().then(() => __importStar(require('./model')))).default;
     const logs = await BlockchainLog.find(filter)
         .sort({ createdAt: -1 })
@@ -178,6 +181,44 @@ exports.getLatestLogs = (0, utils_1.asyncHandler)(async (req, res) => {
         etherscanUrl: (0, service_1.getEtherscanUrl)(log.txHash),
     }));
     return (0, utils_1.sendSuccess)(res, enriched);
+});
+/**
+ * GET /api/blockchain/status
+ * Returns overall blockchain logging statistics and health metrics.
+ */
+exports.getBlockchainStatus = (0, utils_1.asyncHandler)(async (req, res) => {
+    const BlockchainLog = (await Promise.resolve().then(() => __importStar(require('./model')))).default;
+    // Get total POs count
+    const totalPOs = await model_1.default.countDocuments();
+    // Get count of POs logged on chain
+    const loggedOnChain = await model_1.default.countDocuments({ blockchainTxHash: { $exists: true } });
+    // Get count of POs with pending blockchain logging (has tx hash but not confirmed)
+    const pendingLogging = await model_1.default.countDocuments({
+        blockchainTxHash: { $exists: true },
+        blockchainLoggedAt: { $exists: false },
+    });
+    // Get recent transactions for the dashboard
+    const recentTransactions = await BlockchainLog.find({
+        referenceModel: 'PurchaseOrder',
+    })
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .populate('referenceId', 'poNumber')
+        .lean();
+    const enriched = recentTransactions.map((tx) => ({
+        _id: tx._id,
+        poNumber: tx.referenceId?.poNumber || tx.referenceId,
+        eventType: tx.eventType,
+        transactionHash: tx.txHash,
+        timestamp: tx.createdAt,
+        status: tx.confirmationStatus,
+    }));
+    return (0, utils_1.sendSuccess)(res, {
+        totalPOs,
+        loggedOnChain,
+        pendingLogging,
+        recentTransactions: enriched,
+    });
 });
 /**
  * POST /api/blockchain/webhook

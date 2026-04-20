@@ -4,21 +4,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runForecastingAgent = runForecastingAgent;
-const google_genai_1 = require("@langchain/google-genai");
+const openai_1 = require("@langchain/openai");
 const tools_1 = require("./tools");
 const prompts_1 = require("./prompts");
 const model_1 = __importDefault(require("../../modules/forecast/model"));
-// Initialize Google Gemini via LangChain
-const model = new google_genai_1.ChatGoogleGenerativeAI({
-    model: 'gemini-2.0-flash-exp',
-    apiKey: process.env.GEMINI_API_KEY,
-    temperature: 0, // Deterministic for forecasting
+// Initialize Minimax via OpenAI-compatible API
+const model = new openai_1.ChatOpenAI({
+    modelName: 'MiniMax-M2.7',
+    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL,
+    temperature: 0,
 });
 // Sequential workflow execution
 async function executeForecastingWorkflow(initialState) {
     const state = {
         ...initialState,
-        modelVersion: 'gemini-2.0-flash',
+        modelVersion: 'MiniMax-M2.7',
         errors: [],
     };
     try {
@@ -45,7 +46,6 @@ async function executeForecastingWorkflow(initialState) {
         // Step 3: Analyze patterns using LLM
         console.log('Step 3: Analyzing patterns with LLM...');
         const analysisPrompt = (0, prompts_1.ANALYSIS_PROMPT)(state.historicalData);
-        // Use LangChain's withStructuredOutput for JSON mode
         const analysisResult = await model.invoke([
             { role: 'user', content: analysisPrompt }
         ]);

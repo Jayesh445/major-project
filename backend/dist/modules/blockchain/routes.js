@@ -13,6 +13,7 @@ router.post('/webhook', controller_1.handleWebhook);
 // Internal endpoint (called by Mastra workflows via internal.routes.ts)
 router.post('/log', internalAuth_1.internalAuth, controller_1.createLog);
 // Authenticated endpoints for dashboards
+router.get('/status', middlewares_1.authenticate, controller_1.getBlockchainStatus);
 router.get('/logs/:referenceId', middlewares_1.authenticate, controller_1.getLogsByReferenceHandler);
 router.get('/logs', middlewares_1.authenticate, controller_1.getLatestLogs);
 exports.default = router;

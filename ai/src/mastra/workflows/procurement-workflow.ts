@@ -1,5 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { minimaxHTTP } from '../models/minimax-http.js';
 import {
   getProductById,
   getWarehouseById,
@@ -147,9 +148,6 @@ const calculateOrderParamsStep = createStep({
       };
     }
 
-    const agent = mastra?.getAgent('procurementOrchestratorAgent');
-    if (!agent) throw new Error('Procurement orchestrator agent not found');
-
     console.log('[Procurement] Step 2: Calculating order parameters...');
 
     const prompt = `Analyze the following inventory situation and recommend order parameters:
@@ -170,19 +168,38 @@ const calculateOrderParamsStep = createStep({
 - Days until stockout: ${inputData.daysUntilStockout}
 - Urgency: ${inputData.urgency}
 
-Use the tools to:
-1. Calculate EOQ (annual demand = daily * 365, ordering cost = ${inputData.orderingCostPerPO}, holding cost = ${inputData.holdingCostPerUnit})
-2. Get supplier options to determine pricing
+Use the following to calculate EOQ:
+- Annual demand = daily demand * 365
+- Ordering cost per PO = ${inputData.orderingCostPerPO}
+- Holding cost per unit = ${inputData.holdingCostPerUnit}
 
 Return your recommendation as JSON.`;
 
-    const result = await agent.generate([{ role: 'user', content: prompt }]);
-
     let data;
     try {
-      const text = result.text || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      data = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+      const message = await minimaxHTTP.chat(
+        [
+          {
+            role: 'system',
+            content: `You are a procurement orchestration AI. Analyze inventory situations and recommend order parameters based on demand forecasts and cost optimization.
+
+Output format MUST be valid JSON only:
+{
+  "action": "trigger_negotiation|hold|expedite",
+  "negotiationParams": {"requiredQty": number, "maxUnitPrice": number, "targetUnitPrice": number, "maxLeadTimeDays": number},
+  "reasoning": "explanation"
+}`,
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        { temperature: 0, max_tokens: 1024 }
+      );
+
+      const jsonMatch = message.match(/\{[\s\S]*\}/);
+      data = JSON.parse(jsonMatch ? jsonMatch[0] : message);
     } catch {
       // Fallback: calculate manually
       const annualDemand = inputData.forecast.avgDailyDemand * 365;

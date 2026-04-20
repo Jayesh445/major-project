@@ -67,7 +67,7 @@ When generating forecasts, ALWAYS return ONLY valid JSON with this exact structu
 - Keep reasoning concise but informative
 - Ensure all numbers are rounded appropriately
 `,
-  model: 'google/gemini-3-flash-preview',
+  model: 'openai/MiniMax-M2.7',
   tools: {
     validateInput: validateInputTool,
     fetchHistoricalData: fetchHistoricalDataTool,

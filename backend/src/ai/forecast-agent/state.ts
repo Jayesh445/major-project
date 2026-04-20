@@ -36,7 +36,7 @@ export const ForecastStateSchema = z.object({
   recommendedOrderDate: z.string().optional(),
 
   // Metadata
-  modelVersion: z.string().default('gemini-2.0-flash'),
+  modelVersion: z.string().default('MiniMax-M2.7'),
   generatedAt: z.string().optional(),
 
   // Error handling

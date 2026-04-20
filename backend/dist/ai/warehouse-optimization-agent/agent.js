@@ -4,15 +4,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runOptimizationAgent = runOptimizationAgent;
-const google_genai_1 = require("@langchain/google-genai");
+const openai_1 = require("@langchain/openai");
 const tools_1 = require("./tools");
 const prompts_1 = require("./prompts");
 const model_1 = __importDefault(require("@/modules/warehouse-optimization/model"));
-// Initialize Google Gemini via LangChain
-const model = new google_genai_1.ChatGoogleGenerativeAI({
-    model: 'gemini-2.0-flash-exp',
-    apiKey: process.env.GEMINI_API_KEY,
-    temperature: 0.3, // Slightly higher for creative optimization
+// Initialize Minimax via OpenAI-compatible API
+const model = new openai_1.ChatOpenAI({
+    modelName: 'MiniMax-M2.7',
+    apiKey: process.env.OPENAI_API_KEY,
+    baseURL: process.env.OPENAI_BASE_URL,
+    temperature: 0.3,
 });
 // Sequential workflow execution
 async function executeOptimizationWorkflow() {

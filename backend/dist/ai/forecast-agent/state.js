@@ -33,7 +33,7 @@ exports.ForecastStateSchema = zod_1.z.object({
     recommendedReorderQty: zod_1.z.number().optional(),
     recommendedOrderDate: zod_1.z.string().optional(),
     // Metadata
-    modelVersion: zod_1.z.string().default('gemini-2.0-flash'),
+    modelVersion: zod_1.z.string().default('MiniMax-M2.7'),
     generatedAt: zod_1.z.string().optional(),
     // Error handling
     errors: zod_1.z.array(zod_1.z.string()).default([]),

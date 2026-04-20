@@ -142,7 +142,7 @@ function getDemandForDay(profile, dayIndex, date) {
     return Math.max(0, base);
 }
 // ─── Seeder Functions ────────────────────────────────────────────────────────
-async function seedUsers(passwordHash) {
+async function seedUsers(passwordHash, suppliers) {
     const users = [];
     // 1 admin
     users.push({
@@ -151,9 +151,20 @@ async function seedUsers(passwordHash) {
         passwordHash,
         role: 'admin',
         isActive: true,
+        assignedWarehouses: [],
         notificationPreferences: { email: true, inApp: true, lowStockAlerts: true, poApprovals: true, negotiationUpdates: true },
     });
-    // 4 warehouse managers
+    // Test warehouse manager
+    users.push({
+        name: 'Test Warehouse Manager',
+        email: 'warehouse@test.com',
+        passwordHash,
+        role: 'warehouse_manager',
+        isActive: true,
+        assignedWarehouses: [],
+        notificationPreferences: { email: true, inApp: true, lowStockAlerts: true, poApprovals: false, negotiationUpdates: false },
+    });
+    // 4 additional warehouse managers (random)
     for (let i = 0; i < 4; i++) {
         const first = faker_1.faker.person.firstName();
         const last = faker_1.faker.person.lastName();
@@ -163,10 +174,21 @@ async function seedUsers(passwordHash) {
             passwordHash,
             role: 'warehouse_manager',
             isActive: true,
+            assignedWarehouses: [],
             notificationPreferences: { email: true, inApp: true, lowStockAlerts: true, poApprovals: false, negotiationUpdates: false },
         });
     }
-    // 3 procurement officers
+    // Test procurement officer
+    users.push({
+        name: 'Test Procurement Officer',
+        email: 'procurement@test.com',
+        passwordHash,
+        role: 'procurement_officer',
+        isActive: true,
+        assignedWarehouses: [],
+        notificationPreferences: { email: true, inApp: true, lowStockAlerts: false, poApprovals: true, negotiationUpdates: true },
+    });
+    // 3 additional procurement officers (random)
     for (let i = 0; i < 3; i++) {
         const first = faker_1.faker.person.firstName();
         const last = faker_1.faker.person.lastName();
@@ -176,7 +198,23 @@ async function seedUsers(passwordHash) {
             passwordHash,
             role: 'procurement_officer',
             isActive: true,
+            assignedWarehouses: [],
             notificationPreferences: { email: true, inApp: true, lowStockAlerts: false, poApprovals: true, negotiationUpdates: true },
+        });
+    }
+    // 3 test supplier users (linked to first 3 suppliers)
+    const testSuppliers = suppliers?.slice(0, 3) || [];
+    const supplierEmails = ['supplier1@test.com', 'supplier2@test.com', 'supplier3@test.com'];
+    for (let i = 0; i < Math.min(3, testSuppliers.length); i++) {
+        users.push({
+            name: testSuppliers[i].companyName,
+            email: supplierEmails[i],
+            passwordHash,
+            role: 'supplier',
+            isActive: true,
+            supplierRef: testSuppliers[i]._id,
+            assignedWarehouses: [],
+            notificationPreferences: { email: true, inApp: true, lowStockAlerts: false, poApprovals: false, negotiationUpdates: true },
         });
     }
     return model_1.default.insertMany(users);
@@ -795,14 +833,19 @@ async function seed() {
         console.log('   Done.\n');
     }
     const passwordHash = await bcryptjs_1.default.hash('Password123!', 10);
-    // ── 1. Users ───────────────────────────────────────────────────────────
+    // ── 1. Suppliers (first, so we can link supplier users) ──────────────────
+    console.log('🏢  Seeding suppliers...');
+    const suppliers = await seedSuppliers();
+    console.log(`    Created ${suppliers.length} suppliers\n`);
+    // ── 2. Users ───────────────────────────────────────────────────────────
     console.log('👤  Seeding users...');
-    const users = await seedUsers(passwordHash);
+    const users = await seedUsers(passwordHash, suppliers);
     const adminUser = users.find((u) => u.role === 'admin');
     const whManagers = users.filter((u) => u.role === 'warehouse_manager');
     const procOfficers = users.filter((u) => u.role === 'procurement_officer');
-    console.log(`    Created ${users.length} users (1 admin, ${whManagers.length} wh managers, ${procOfficers.length} proc officers)\n`);
-    // ── 2. Warehouses ──────────────────────────────────────────────────────
+    const supplierUsers = users.filter((u) => u.role === 'supplier');
+    console.log(`    Created ${users.length} users (1 admin, ${whManagers.length} wh managers, ${procOfficers.length} proc officers, ${supplierUsers.length} suppliers)\n`);
+    // ── 3. Warehouses ──────────────────────────────────────────────────────
     console.log('🏭  Seeding warehouses...');
     const warehouses = await seedWarehouses(whManagers);
     for (let i = 0; i < whManagers.length; i++) {
@@ -810,10 +853,6 @@ async function seed() {
         await model_1.default.findByIdAndUpdate(whManagers[i]._id, { assignedWarehouses: assigned });
     }
     console.log(`    Created ${warehouses.length} warehouses\n`);
-    // ── 3. Suppliers ───────────────────────────────────────────────────────
-    console.log('🏢  Seeding suppliers...');
-    const suppliers = await seedSuppliers();
-    console.log(`    Created ${suppliers.length} suppliers\n`);
     // ── 4. Products ────────────────────────────────────────────────────────
     console.log('📦  Seeding products...');
     const products = await seedProducts(suppliers, adminUser);

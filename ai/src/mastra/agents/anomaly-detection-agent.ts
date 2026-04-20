@@ -83,7 +83,7 @@ Minimum score: 0
 - Every anomaly must have a specific, actionable recommendation
 - Do not flag normal seasonal variations as anomalies
 `,
-  model: 'google/gemini-3-flash-preview',
+  model: 'openai/MiniMax-M2.7',
   tools: {
     fetchInventorySnapshot: fetchInventorySnapshotTool,
     fetchRecentPOActivity: fetchRecentPOActivityTool,

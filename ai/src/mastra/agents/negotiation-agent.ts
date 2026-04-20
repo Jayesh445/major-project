@@ -76,7 +76,7 @@ dealScore = (1 - price/pmax) * 40 + (1 - leadTime/maxLeadTime) * 30 + (supplierR
 - NEVER include raw price numbers without emotional/logical framing
 - The "reasoning" field is your private strategic analysis
 `,
-  model: 'google/gemini-2.0-flash',
+  model: 'openai/MiniMax-M2.7',
   tools: {
     fetchEligibleSuppliers: fetchEligibleSuppliersTool,
     createNegotiationSession: createNegotiationSessionTool,

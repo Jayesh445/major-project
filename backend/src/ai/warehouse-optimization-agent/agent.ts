@@ -1,14 +1,15 @@
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatOpenAI } from '@langchain/openai';
 import { fetchWarehousesTool, fetchInventoryDataTool } from './tools';
 import { ANALYSIS_PROMPT, OPTIMIZATION_PROMPT } from './prompts';
 import WarehouseOptimizationRecommendation from '@/modules/warehouse-optimization/model';
 import Inventory from '@/modules/inventory/model';
 
-// Initialize Google Gemini via LangChain
-const model = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash-exp',
-  apiKey: process.env.GEMINI_API_KEY,
-  temperature: 0.3, // Slightly higher for creative optimization
+// Initialize Minimax via OpenAI-compatible API
+const model = new ChatOpenAI({
+  modelName: 'MiniMax-M2.7',
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL,
+  temperature: 0.3,
 });
 
 // Define state interface

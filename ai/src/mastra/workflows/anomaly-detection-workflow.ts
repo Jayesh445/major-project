@@ -1,5 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { minimaxHTTP } from '../models/minimax-http.js';
 import { getAllInventory, getPurchaseOrders, getActiveWarehouses } from '../api-client.js';
 
 // ── Step 1: Collect system-wide data ─────────────────────────────────────────
@@ -85,10 +86,7 @@ const analyzeAnomaliesStep = createStep({
       overallHealthScore: z.number(),
     }),
   }),
-  execute: async ({ inputData, mastra }) => {
-    const agent = mastra?.getAgent('anomalyDetectionAgent');
-    if (!agent) throw new Error('Anomaly detection agent not found');
-
+  execute: async ({ inputData }) => {
     console.log('[AnomalyDetection] Step 2: Running anomaly analysis...');
 
     const inventorySummary = inputData.inventory
@@ -124,13 +122,33 @@ ${warehouseSummary}
 Detect ALL anomalies across inventory, procurement, warehouse, and demand categories.
 Return ONLY valid JSON. No markdown, no code blocks.`;
 
-    const result = await agent.generate([{ role: 'user', content: prompt }]);
-
     let data;
     try {
-      const text = result.text || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      data = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+      const message = await minimaxHTTP.chat(
+        [
+          {
+            role: 'system',
+            content: `You are an expert supply chain anomaly detection AI. Identify unusual patterns and risks in inventory, procurement, warehousing, and demand data.
+
+Output format MUST be valid JSON only:
+{
+  "scanTimestamp": "ISO timestamp",
+  "anomalies": [
+    {"category": "inventory|procurement|warehouse|demand", "severity": "critical|warning|info", "title": "title", "description": "description", "affectedItems": ["item1"], "recommendation": "recommendation"}
+  ],
+  "summary": {"totalAnomalies": number, "criticalCount": number, "warningCount": number, "infoCount": number, "overallHealthScore": number}
+}`,
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        { temperature: 0, max_tokens: 2048 }
+      );
+
+      const jsonMatch = message.match(/\{[\s\S]*\}/);
+      data = JSON.parse(jsonMatch ? jsonMatch[0] : message);
     } catch {
       data = {
         scanTimestamp: new Date().toISOString(),

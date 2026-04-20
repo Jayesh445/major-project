@@ -1,5 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { minimaxHTTP } from '../models/minimax-http.js';
 import {
   getProductById,
   getWarehouseById,
@@ -175,10 +176,7 @@ const generateForecastStep = createStep({
     productId: z.string(),
     warehouseId: z.string(),
   }),
-  execute: async ({ inputData, mastra }) => {
-    const agent = mastra?.getAgent('forecastAgent');
-    if (!agent) throw new Error('Forecast agent not found');
-
+  execute: async ({ inputData }) => {
     console.log('Step 3: Generating forecast with AI agent...');
 
     const dataPointsStr = inputData.historicalData.data
@@ -203,15 +201,43 @@ ${dataPointsStr}
 
 Return ONLY valid JSON following your instructions. No markdown, no code blocks.`;
 
-    const result = await agent.generate([{ role: 'user', content: prompt }]);
-
     let forecastData;
     try {
-      const text = result.text || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      forecastData = JSON.parse(jsonMatch ? jsonMatch[0] : text);
-    } catch {
-      throw new Error('Agent did not return valid JSON forecast');
+      const message = await minimaxHTTP.chat(
+        [
+          {
+            role: 'system',
+            content: `You are an expert demand forecasting AI. Analyze historical demand patterns and generate accurate 7-day forecasts with confidence intervals.
+
+Output format MUST be valid JSON only:
+{
+  "analysis": {
+    "trend": "increasing|decreasing|stable",
+    "seasonality": "description",
+    "averageDemand": number,
+    "stdDeviation": number,
+    "keyInsights": ["insight1", "insight2"]
+  },
+  "predictions": [
+    {"date": "YYYY-MM-DD", "predictedDemand": number, "confidenceLow": number, "confidenceHigh": number}
+  ],
+  "reasoning": "explanation",
+  "recommendedReorderQty": number,
+  "recommendedOrderDate": "YYYY-MM-DD"
+}`,
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        { temperature: 0, max_tokens: 2048 }
+      );
+
+      const jsonMatch = message.match(/\{[\s\S]*\}/);
+      forecastData = JSON.parse(jsonMatch ? jsonMatch[0] : message);
+    } catch (err) {
+      throw new Error(`Failed to generate forecast: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
 
     const avgDemand = Math.round(

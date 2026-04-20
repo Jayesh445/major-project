@@ -21,9 +21,9 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
-    "@langchain/core": "^1.1.24",
     "@langchain/google-genai": "^2.1.18",
     "@langchain/langgraph": "^1.1.4",
+    "@langchain/openai": "^0.2.0",
     "@mastra/core": "^1.4.0",
     "@types/qrcode": "^1.5.6",
     "axios": "^1.13.5",

@@ -1,5 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { minimaxHTTP } from '../models/minimax-http.js';
 import { getActiveWarehouses, getAllInventory, saveWarehouseOptimization } from '../api-client.js';
 
 // ── Step 1: Fetch warehouse data directly via backend API ─────────────────────
@@ -147,10 +148,7 @@ const generateOptimizationStep = createStep({
     warehouses: z.array(z.any()),
     inventoryData: z.array(z.any()),
   }),
-  execute: async ({ inputData, mastra }) => {
-    const agent = mastra?.getAgent('warehouseOptimizationAgent');
-    if (!agent) throw new Error('Warehouse optimization agent not found');
-
+  execute: async ({ inputData }) => {
     console.log('Step 3: Generating optimization recommendations...');
 
     const warehousesSummary = inputData.warehouses
@@ -193,15 +191,42 @@ ${inventorySummary}
 
 Return ONLY valid JSON following your instructions. No markdown, no code blocks.`;
 
-    const result = await agent.generate([{ role: 'user', content: prompt }]);
-
     let optimizationData;
     try {
-      const text = result.text || '';
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      optimizationData = JSON.parse(jsonMatch ? jsonMatch[0] : text);
-    } catch {
-      throw new Error('Agent did not return valid JSON recommendations');
+      const message = await minimaxHTTP.chat(
+        [
+          {
+            role: 'system',
+            content: `You are an expert warehouse optimization AI. Analyze warehouse distribution and generate specific, actionable transfer recommendations.
+
+Output format MUST be valid JSON only:
+{
+  "analysis": {
+    "overstockedWarehouses": ["code1", "code2"],
+    "understockedWarehouses": ["code3"],
+    "imbalancedProducts": ["SKU1", "SKU2"],
+    "insights": ["insight1", "insight2"]
+  },
+  "recommendations": [
+    {"productSku": "SKU", "fromWarehouseCode": "FROM", "toWarehouseCode": "TO", "quantity": number, "reason": "reason", "estimatedCostSaving": number}
+  ],
+  "summary": "summary of improvements",
+  "predictedCostReduction": number,
+  "predictedCapacityImprovement": number
+}`,
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        { temperature: 0, max_tokens: 2048 }
+      );
+
+      const jsonMatch = message.match(/\{[\s\S]*\}/);
+      optimizationData = JSON.parse(jsonMatch ? jsonMatch[0] : message);
+    } catch (err) {
+      throw new Error(`Failed to generate recommendations: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
 
     console.log(`✓ Generated ${optimizationData.recommendations.length} transfer recommendations`);

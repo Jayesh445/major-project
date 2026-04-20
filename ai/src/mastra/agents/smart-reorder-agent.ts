@@ -70,7 +70,7 @@ You are an intelligent inventory reorder specialist. You analyze all products ac
 - Never recommend reorder if pending incoming covers the shortfall
 - Include reasoning for each recommendation
 `,
-  model: 'google/gemini-3-flash-preview',
+  model: 'openai/MiniMax-M2.7',
   tools: {
     getReorderAnalysis: getReorderAnalysisTool,
     calculateEOQ: calculateEOQTool,

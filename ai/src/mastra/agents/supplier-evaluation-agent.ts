@@ -75,7 +75,7 @@ Where weights are:
 - Recommend diversification if > 60% spend is with one supplier
 - Flag single-source products (only 1 supplier available)
 `,
-  model: 'google/gemini-3-flash-preview',
+  model: 'openai/MiniMax-M2.7',
   tools: {
     fetchAllSuppliers: fetchAllSuppliersTool,
     fetchSupplierPOHistory: fetchSupplierPOHistoryTool,

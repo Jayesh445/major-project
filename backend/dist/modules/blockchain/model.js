@@ -44,9 +44,14 @@ const BlockchainLogSchema = new mongoose_1.Schema({
         enum: {
             values: [
                 'po_created',
+                'po_submitted_for_approval',
                 'po_approved',
                 'po_sent',
+                'po_sent_to_supplier',
                 'po_received',
+                'po_acknowledged',
+                'goods_received',
+                'po_cancelled',
                 'negotiation_accepted',
                 'negotiation_rejected',
                 'inventory_adjustment',
@@ -126,8 +131,6 @@ BlockchainLogSchema.index({ eventType: 1, createdAt: -1 });
 BlockchainLogSchema.index({ confirmationStatus: 1, createdAt: -1 });
 // Index for finding logs by block number
 BlockchainLogSchema.index({ blockNumber: 1 }, { sparse: true });
-// Index for finding logs by block and confirmation status
-BlockchainLogSchema.index({ blockNumber: 1, confirmationStatus: 1 });
 /**
  * Blockchain log model
  */

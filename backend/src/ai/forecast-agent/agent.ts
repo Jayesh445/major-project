@@ -1,13 +1,14 @@
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
+import { ChatOpenAI } from '@langchain/openai';
 import { fetchHistoricalDataTool, validateInputTool } from './tools';
 import { ANALYSIS_PROMPT, FORECAST_PROMPT } from './prompts';
 import DemandForecast from '../../modules/forecast/model';
 
-// Initialize Google Gemini via LangChain
-const model = new ChatGoogleGenerativeAI({
-  model: 'gemini-2.0-flash-exp',
-  apiKey: process.env.GEMINI_API_KEY,
-  temperature: 0, // Deterministic for forecasting
+// Initialize Minimax via OpenAI-compatible API
+const model = new ChatOpenAI({
+  modelName: 'MiniMax-M2.7',
+  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: process.env.OPENAI_BASE_URL,
+  temperature: 0,
 });
 
 // Define state interface
@@ -46,7 +47,7 @@ async function executeForecastingWorkflow(
 ): Promise<ForecastState> {
   const state: ForecastState = {
     ...initialState,
-    modelVersion: 'gemini-2.0-flash',
+    modelVersion: 'MiniMax-M2.7',
     errors: [],
   };
 
@@ -79,7 +80,6 @@ async function executeForecastingWorkflow(
     console.log('Step 3: Analyzing patterns with LLM...');
     const analysisPrompt = ANALYSIS_PROMPT(state.historicalData);
 
-    // Use LangChain's withStructuredOutput for JSON mode
     const analysisResult = await model.invoke([
       { role: 'user', content: analysisPrompt }
     ]);

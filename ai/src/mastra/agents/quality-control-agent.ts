@@ -81,7 +81,7 @@ You are a quality control specialist managing goods receipt verification for a s
 - Calculate overallAccuracy = sum(receivedCorrect) / sum(ordered) * 100
 - Flag ANY hash mismatch as potential tampering
 `,
-  model: 'google/gemini-3-flash-preview',
+  model: 'openai/MiniMax-M2.7',
   tools: {
     fetchPOForVerification: fetchPOForVerificationTool,
     recordGoodsReceipt: recordGoodsReceiptTool,

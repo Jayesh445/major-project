@@ -82,7 +82,7 @@ ALWAYS return ONLY valid JSON with this exact structure:
 - Ensure all warehouse codes and SKUs match the input data exactly
 - Round all numbers appropriately
 `,
-  model: 'google/gemini-3-flash-preview',
+  model: 'openai/MiniMax-M2.7',
   tools: {
     fetchWarehouses: fetchWarehousesTool,
     fetchInventoryData: fetchInventoryDataTool,

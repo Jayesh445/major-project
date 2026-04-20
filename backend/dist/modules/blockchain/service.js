@@ -27,6 +27,7 @@ exports.verifyDocumentHash = verifyDocumentHash;
 exports.getPendingLogs = getPendingLogs;
 exports.updateLogStatus = updateLogStatus;
 exports.getLogsByReference = getLogsByReference;
+exports.logEventLocalOnly = logEventLocalOnly;
 const ethers_1 = require("ethers");
 const crypto_1 = require("crypto");
 const model_1 = __importDefault(require("./model"));
@@ -108,25 +109,29 @@ function getEtherscanUrl(txHash) {
  * The background worker will update confirmationStatus when the tx is mined.
  */
 async function logEventOnChain(params) {
+    const mongoose = require('mongoose');
     const documentHash = computeDocumentHash(params.payload);
     const eventTypeUint = constants_1.EVENT_TYPE_ENUM[params.eventType];
     if (eventTypeUint === undefined)
         throw new Error(`Unknown eventType: ${params.eventType}`);
+    // Convert string IDs to ObjectIds
+    const referenceIdObj = new mongoose.Types.ObjectId(params.referenceId);
+    const triggeredByObj = params.triggeredBy ? new mongoose.Types.ObjectId(params.triggeredBy) : undefined;
     if (!(0, constants_1.isBlockchainEnabled)()) {
         // Fallback: write to MongoDB as "confirmed" without real chain call
         const fakeHash = `0x${(0, crypto_1.createHash)('sha256')
-            .update(documentHash + Date.now().toString())
+            .update(documentHash + Date.now().toString() + Math.random())
             .digest('hex')}`;
         const doc = await model_1.default.create({
             eventType: params.eventType,
             referenceModel: params.referenceModel,
-            referenceId: params.referenceId,
+            referenceId: referenceIdObj,
             payload: params.payload,
             txHash: fakeHash,
             networkName: 'offline-fallback',
             confirmationStatus: 'confirmed',
             confirmedAt: new Date(),
-            triggeredBy: params.triggeredBy,
+            triggeredBy: triggeredByObj,
         });
         return {
             _id: doc._id.toString(),
@@ -145,12 +150,12 @@ async function logEventOnChain(params) {
     const doc = await model_1.default.create({
         eventType: params.eventType,
         referenceModel: params.referenceModel,
-        referenceId: params.referenceId,
+        referenceId: referenceIdObj,
         payload: params.payload,
         txHash: tx.hash,
         networkName: constants_1.NETWORK_NAME,
         confirmationStatus: 'pending',
-        triggeredBy: params.triggeredBy,
+        triggeredBy: triggeredByObj,
     });
     return {
         _id: doc._id.toString(),
@@ -257,4 +262,36 @@ async function updateLogStatus(id, status, blockNumber) {
  */
 async function getLogsByReference(referenceId) {
     return model_1.default.find({ referenceId }).sort({ createdAt: -1 }).lean();
+}
+/**
+ * Log an event to MongoDB only (no blockchain transaction).
+ * Used for intermediate workflow steps that don't need on-chain verification.
+ */
+async function logEventLocalOnly(params) {
+    const mongoose = require('mongoose');
+    const documentHash = computeDocumentHash(params.payload);
+    const fakeHash = `0x${(0, crypto_1.createHash)('sha256')
+        .update(documentHash + Date.now().toString() + Math.random())
+        .digest('hex')}`;
+    // Convert referenceId string to ObjectId
+    const referenceIdObj = new mongoose.Types.ObjectId(params.referenceId);
+    const triggeredByObj = params.triggeredBy ? new mongoose.Types.ObjectId(params.triggeredBy) : undefined;
+    const doc = await model_1.default.create({
+        eventType: params.eventType,
+        referenceModel: params.referenceModel,
+        referenceId: referenceIdObj,
+        payload: params.payload,
+        txHash: fakeHash,
+        networkName: 'local-only',
+        confirmationStatus: 'confirmed',
+        confirmedAt: new Date(),
+        triggeredBy: triggeredByObj,
+    });
+    return {
+        _id: doc._id.toString(),
+        txHash: fakeHash,
+        documentHash,
+        confirmationStatus: 'confirmed',
+        etherscanUrl: null,
+    };
 }

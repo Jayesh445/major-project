@@ -71,7 +71,7 @@ You are the master procurement orchestrator for an autonomous supply chain platf
 - EOQ should be adjusted up if below supplier MOQ
 - If no suppliers available, escalate immediately
 `,
-  model: 'google/gemini-3-flash-preview',
+  model: 'openai/MiniMax-M2.7',
   tools: {
     checkReplenishmentNeed: checkReplenishmentNeedTool,
     calculateEOQ: calculateEOQTool,
