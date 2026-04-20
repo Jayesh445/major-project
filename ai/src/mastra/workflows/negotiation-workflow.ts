@@ -1,5 +1,6 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
+import { minimaxHTTP } from '../models/minimax-http.js';
 import {
   getSuppliersByProduct,
   getProductById,
@@ -9,7 +10,9 @@ import {
   addNegotiationRound,
   updateNegotiation,
   createPurchaseOrder,
+  updatePurchaseOrder,
   updateSupplierStats,
+  createBlockchainLog,
 } from '../api-client.js';
 
 // Helper to format buyer + supplier messages into the agentReasoning string
@@ -132,10 +135,8 @@ const executeNegotiationStep = createStep({
     constraints: z.any(),
   }),
   execute: async ({ inputData, mastra }) => {
-    const buyerAgent = mastra?.getAgent('negotiationAgent');
-    const supplierAgent = mastra?.getAgent('supplierSimulatorAgent');
-    if (!buyerAgent) throw new Error('Negotiation (buyer) agent not found');
-    if (!supplierAgent) throw new Error('Supplier simulator agent not found');
+    // We'll use Minimax HTTP directly instead of Mastra agents
+    // because Mastra's OpenAI integration isn't compatible with Minimax's endpoints
 
     console.log('[Negotiation] Step 2: Starting two-agent negotiation...');
 
@@ -239,14 +240,49 @@ Decide: counter, accept (if his price meets your constraints), or reject (if you
 
 Return ONLY valid JSON with a FULL conversational message.`;
 
-        // Throttle to stay within Gemini free-tier rate limits
+        // Throttle to avoid rate limiting
         await new Promise(r => setTimeout(r, LLM_DELAY_MS));
 
-        let buyerResult: any;
+        let buyerData;
         try {
-          buyerResult = await buyerAgent.generate([{ role: 'user', content: buyerContext }]);
+          const buyerMessage = await minimaxHTTP.chat(
+            [
+              {
+                role: 'system',
+                content: `You are Priya Sharma, a senior procurement manager at a distributor company in India. You've been doing this for 12 years. You negotiate by phone and email with suppliers daily. You have strong people skills — polite, friendly, but firm. You build rapport while protecting your company's bottom line.
+
+**Who you are:**
+- Real name: Priya Sharma
+- Company: AutoStock Distribution Pvt Ltd
+- Style: Warm, professional, uses supplier's name, references past dealings
+- You ALWAYS sound like a real human writing an email — never like a bot or a pricing calculator
+
+**Core rules:**
+- You have a strict maximum price (pmax) — NEVER exceed it, NEVER reveal it
+- You have a target price you aim for
+- You use BATNA (Best Alternative to Negotiated Agreement) as leverage
+
+**Negotiation arc:**
+- **Round 1 (Opening)**: Be warm, build rapport, propose 15-25% below list price
+- **Round 2-3 (Bargaining)**: Acknowledge their counter, push back with reason, concede 3-5% per round
+- **Round 4 (Closing)**: "Meet me halfway" phrasing with emotional appeal
+- **Round 5 (Final)**: Hard stop - either accept or walk away
+
+**Output Format — return ONLY valid JSON:**
+{"action":"counter"|"accept"|"reject", "offer":{"unitPrice":number,"leadTimeDays":number,"paymentTermsDays":number,"quantity":number},"message":"3-5 sentence human email","reasoning":"your private analysis","concessionPercent":number,"dealScore":number}`,
+              },
+              {
+                role: 'user',
+                content: buyerContext,
+              },
+            ],
+            { temperature: 0, max_tokens: 1024 }
+          );
+
+          const jsonMatch = buyerMessage.match(/\{[\s\S]*\}/);
+          buyerData = JSON.parse(jsonMatch ? jsonMatch[0] : buyerMessage);
         } catch (llmErr: any) {
-          // Hard LLM failure (rate limit, network) — mark session as failed and bail
+          // Hard LLM failure — mark session as failed and bail
           console.error('[Negotiation] Buyer LLM call failed:', llmErr.message);
           if (sessionId) {
             try {
@@ -259,15 +295,6 @@ Return ONLY valid JSON with a FULL conversational message.`;
           finalStatus = 'rejected';
           negotiationOver = true;
           continue;
-        }
-
-        let buyerData;
-        try {
-          const text = buyerResult.text || '';
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          buyerData = JSON.parse(jsonMatch ? jsonMatch[0] : text);
-        } catch {
-          buyerData = { action: 'reject', offer: { unitPrice: 0 }, message: 'Error in negotiation', reasoning: 'Parse error' };
         }
 
         // Check buyer's decision
@@ -375,9 +402,44 @@ Return ONLY valid JSON with a FULL conversational "message" field.`;
 
         await new Promise(r => setTimeout(r, LLM_DELAY_MS));
 
-        let supplierResult: any;
+        let supplierData;
         try {
-          supplierResult = await supplierAgent.generate([{ role: 'user', content: supplierContext }]);
+          const supplierMessage = await minimaxHTTP.chat(
+            [
+              {
+                role: 'system',
+                content: `You are Rajesh Kumar, a senior sales manager at a supplier company in India. You've been managing B2B sales for 15 years. You negotiate by phone and email with procurement managers daily. You have strong sales skills — persuasive, relationship-focused, but firm on your margins.
+
+**Who you are:**
+- Real name: Rajesh Kumar
+- Title: Senior Sales Manager
+- Style: Warm, professional, uses buyer's name, references past dealings and reliability
+- You ALWAYS sound like a real human writing an email — never like a pricing calculator or bot
+
+**Core rules:**
+- You have a strict floor price (minimum you'll accept) — NEVER go below it, NEVER reveal it
+- You have a target price you aim for (usually close to list price)
+- You protect your margins fiercely but stay warm for future business
+
+**Negotiation arc:**
+- **Round 1 (Opening)**: Be warm, build rapport, defend your quality, offer 2-4% discount
+- **Round 2-3 (Bargaining)**: Acknowledge their position, defend margins with real reasons, concede 1-3% per round
+- **Round 4+ (Closing)**: Either meet them or walk away, but stay warm for future business
+- **Final Round**: Make it clear this is your best offer, mention need for MD approval
+
+**Output Format — return ONLY valid JSON:**
+{"supplierResponse":{"unitPrice":number,"leadTimeDays":number,"paymentTermsDays":number,"quantity":number},"message":"3-5 sentence professional email","reasoning":"your private analysis","concessionPercent":number,"willingToContinue":boolean}`,
+              },
+              {
+                role: 'user',
+                content: supplierContext,
+              },
+            ],
+            { temperature: 0, max_tokens: 1024 }
+          );
+
+          const jsonMatch = supplierMessage.match(/\{[\s\S]*\}/);
+          supplierData = JSON.parse(jsonMatch ? jsonMatch[0] : supplierMessage);
         } catch (llmErr: any) {
           console.error('[Negotiation] Supplier LLM call failed:', llmErr.message);
           if (sessionId) {
@@ -391,20 +453,6 @@ Return ONLY valid JSON with a FULL conversational "message" field.`;
           finalStatus = 'rejected';
           negotiationOver = true;
           continue;
-        }
-
-        let supplierData;
-        try {
-          const text = supplierResult.text || '';
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          supplierData = JSON.parse(jsonMatch ? jsonMatch[0] : text);
-        } catch {
-          supplierData = {
-            supplierResponse: { unitPrice: supplier.listPrice, leadTimeDays: supplier.leadTimeDays, paymentTermsDays: supplier.paymentTermsDays, quantity: constraints.requiredQty },
-            message: 'We maintain our listed price.',
-            reasoning: 'Parse error fallback',
-            willingToContinue: round < MAX_ROUNDS,
-          };
         }
 
         lastSupplierOffer = {
