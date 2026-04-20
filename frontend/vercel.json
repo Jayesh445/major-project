@@ -2,7 +2,6 @@
   "buildCommand": "next build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "nodejs": "20.x",
   "env": {
     "NEXT_PUBLIC_API_URL": "https://major-api.jayeshgpt.tech/api/v1",
     "NEXT_PUBLIC_BASE_URL": "https://major-api.jayeshgpt.tech"
